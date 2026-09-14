@@ -43,8 +43,9 @@
 .ref { color: var(--text-4); font-size: var(--fs-caption); }
 .sub { display: flex; flex-direction: column; gap: 8px; }
 .slider { display: flex; align-items: center; gap: 10px; font-size: var(--fs-label); color: var(--text-2); white-space: nowrap; }
-.slider input[type='range'] { flex: 1; accent-color: var(--primary); }
-.slider b { width: 36px; text-align: right; color: var(--text); }
+.slider { min-width: 0; }
+.slider input[type='range'] { flex: 1; min-width: 0; width: 100%; accent-color: var(--primary); }
+.slider b { width: 36px; flex-shrink: 0; text-align: right; color: var(--text); }
 .mr { display: flex; align-items: center; gap: var(--sp-3); font-size: var(--fs-label); color: var(--text-2); flex-wrap: wrap; }
 .mr .num { width: 100px; }
 
@@ -55,6 +56,7 @@
 .rr { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .rr p { margin: 0; font-size: var(--fs-label); color: var(--text-2); line-height: 1.5; }
 .inline { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.pair { display: inline-flex; align-items: center; gap: var(--sp-2); white-space: nowrap; }
 .inline input { width: 128px; }
 
 .danger { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }

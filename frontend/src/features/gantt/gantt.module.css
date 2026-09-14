@@ -2,7 +2,12 @@
 
 .toolbar { display: flex; align-items: center; gap: var(--sp-2); padding: 0 var(--sp-2); flex-wrap: wrap; min-height: 44px; }
 .spacer { flex: 1; }
-.chips { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.chips { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; min-width: 0; }
+@media (min-width: 1024px) {
+  .chips { flex: 0 1 auto; flex-wrap: nowrap; overflow: hidden; }
+  .chips > * { flex-shrink: 0; }
+  .toolbar > button:last-child { flex-shrink: 0; }
+}
 
 .card { flex: 1; min-height: 420px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 

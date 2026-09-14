@@ -281,7 +281,8 @@ export function GanttPage() {
                 <Button
                   size="sm"
                   icon={<Flag size={14} />}
-                  title="ล็อกแผนปัจจุบันไว้เทียบ เพื่อดูว่าใช้เวลาเผื่อไปเท่าไร"
+                  title="บันทึก baseline: ล็อกแผนปัจจุบันไว้เทียบ เพื่อดูว่าใช้เวลาเผื่อไปเท่าไร"
+                  aria-label="บันทึก baseline"
                   onClick={() =>
                     saveBaseline.mutate(undefined, {
                       onSuccess: () => toast.success('บันทึก baseline แล้ว เริ่มติดตามการใช้เวลาเผื่อ'),
@@ -289,7 +290,7 @@ export function GanttPage() {
                     })
                   }
                 >
-                  บันทึก baseline
+                  Baseline
                 </Button>
               )}
               <Chip tone="soft" data-testid="chip-dates">

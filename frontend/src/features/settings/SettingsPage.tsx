@@ -490,10 +490,15 @@ function RuleCard({ info, project, onSave }: { info: RuleInfo; project: ProjectO
         )}
         {info.id === 'bufferZones' && (
           <div className={styles.inline}>
-            <span className={styles.crumb}>เหลือง เมื่อใช้เผื่อเกิน</span>
-            <NumberInput aria-label="โซนเหลือง (%)" value={rules.bufferZones.yellow} min={50} max={300} step={10} suffix="%" onChange={(v) => v !== '' && onSave({ bufferZones: { ...rules.bufferZones, yellow: v } })} />
-            <span className={styles.crumb}>ของความคืบหน้า · แดง เมื่อเกิน</span>
-            <NumberInput aria-label="โซนแดง (%)" value={rules.bufferZones.red} min={60} max={400} step={10} suffix="%" onChange={(v) => v !== '' && onSave({ bufferZones: { ...rules.bufferZones, red: v } })} />
+            <span className={styles.pair}>
+              <span className={styles.crumb}>เหลือง เมื่อใช้เผื่อเกิน</span>
+              <NumberInput aria-label="โซนเหลือง (%)" value={rules.bufferZones.yellow} min={50} max={300} step={10} suffix="%" onChange={(v) => v !== '' && onSave({ bufferZones: { ...rules.bufferZones, yellow: v } })} />
+              <span className={styles.crumb}>ของความคืบหน้า</span>
+            </span>
+            <span className={styles.pair}>
+              <span className={styles.crumb}>แดง เมื่อเกิน</span>
+              <NumberInput aria-label="โซนแดง (%)" value={rules.bufferZones.red} min={60} max={400} step={10} suffix="%" onChange={(v) => v !== '' && onSave({ bufferZones: { ...rules.bufferZones, red: v } })} />
+            </span>
           </div>
         )}
         {info.id === 'nearCriticalFloatDays' && near > 0 && (
