@@ -94,6 +94,13 @@ class DefaultDependency(CamelModel):
     lag: int = 0
 
 
+class BufferZones(CamelModel):
+    """Fever-chart zones (SET-10): consumed% / chain-progress% ratio thresholds."""
+
+    yellow: int = Field(default=100, ge=50, le=300)
+    red: int = Field(default=120, ge=60, le=400)
+
+
 class Rules(CamelModel):
     near_critical_float_days: int = Field(default=0, ge=0, le=365)
     progress_rollup: ProgressRollup = "duration"
@@ -102,6 +109,22 @@ class Rules(CamelModel):
     lag_unit: LagUnit = "working"
     default_dependency: DefaultDependency = Field(default_factory=DefaultDependency)
     scheduling_mode: SchedulingMode = "auto"
+    buffer_zones: BufferZones = Field(default_factory=BufferZones)
+
+
+class BaselineTask(CamelModel):
+    start: date
+    end: date
+
+
+class Baseline(CamelModel):
+    """Snapshot of the plan used for buffer consumption and late detection (BUF-5, SET-3)."""
+
+    saved_at: datetime
+    planned_end: date
+    chain_days: int
+    buffer_days: int = 0  # buffer is sized once, at baseline time (CCPM)
+    tasks: dict[str, BaselineTask] = Field(default_factory=dict)
 
 
 class Project(CamelModel):
@@ -115,6 +138,7 @@ class Project(CamelModel):
     assignments: list[Assignment] = Field(default_factory=list)
     buffer: BufferSettings = Field(default_factory=BufferSettings)
     rules: Rules = Field(default_factory=Rules)
+    baseline: Baseline | None = None
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
 

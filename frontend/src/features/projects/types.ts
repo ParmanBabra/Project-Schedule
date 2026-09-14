@@ -62,6 +62,17 @@ export interface Rules {
   lagUnit: 'working' | 'calendar'
   defaultDependency: { type: DependencyType; lag: number }
   schedulingMode: 'auto' | 'manual'
+  bufferZones: { yellow: number; red: number }
+}
+
+export type TaskHealth = 'done' | 'late' | 'on_track' | 'not_started'
+
+export interface Baseline {
+  savedAt: string
+  plannedEnd: string
+  chainDays: number
+  bufferDays: number
+  tasks: Record<string, { start: string; end: string }>
 }
 
 export interface TaskSchedule {
@@ -86,19 +97,24 @@ export interface TaskSchedule {
   isNearCritical: boolean
   progress: number
   depth: number
+  health: TaskHealth
+  expectedProgress: number
 }
 
 export interface BufferResult {
   method: BufferMethod
   chainDays: number
   days: number
+  start: string | null
   end: string | null
   managementReserveDays: number
   managementReserveEnd: string | null
   percentUsed: number | null
   note: string | null
   consumedPercent: number | null
-  status: string | null
+  status: 'green' | 'yellow' | 'red' | null
+  chainProgress: number
+  consumedDays: number | null
 }
 
 export interface ScheduleSummary {
@@ -109,6 +125,8 @@ export interface ScheduleSummary {
   chainDays: number
   plannedEnd: string | null
   committedEnd: string | null
+  lateCount: number
+  baselinePlannedEnd: string | null
 }
 
 export interface Schedule {
@@ -129,6 +147,7 @@ export interface Project {
   assignments: Assignment[]
   buffer: BufferSettings
   rules: Rules
+  baseline: Baseline | null
   createdAt: string
   updatedAt: string
 }

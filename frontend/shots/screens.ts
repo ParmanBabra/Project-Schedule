@@ -54,6 +54,13 @@ export const screens: Screen[] = [
   { name: 'settings', path: async (r) => `/p/${await seedSampleProject(r)}/settings`, mockup: { desktop: 'SettingsDesktop', mobile: 'SettingsMobile' } },
   { name: 'resources', path: async (r) => { await seedSampleProject(r); await seedResources(r); return '/resources' } },
   { name: 'resources-edit', path: async (r) => { await seedSampleProject(r); return '/resources' }, setup: async (page) => { await page.getByRole('button', { name: 'ตัวเลือกของ สุดา' }).click(); await page.getByRole('menuitem', { name: 'แก้ไข' }).click() } },
+  { name: 'calendar', path: async (r) => `/p/${await seedSampleProject(r)}/calendar`, mockup: { mobile: 'MobileCalendar' } },
+  {
+    name: 'calendar-week',
+    path: async (r) => `/p/${await seedSampleProject(r)}/calendar`,
+    viewports: ['desktop'],
+    setup: async (page) => { await page.getByRole('radio', { name: 'สัปดาห์' }).click() },
+  },
   { name: 'ui-kit', path: '/dev/ui', viewports: ['desktop'] },
 ]
 

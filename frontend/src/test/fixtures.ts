@@ -27,6 +27,8 @@ function sched(id: string, wbs: string, start: string, end: string, extra: Parti
     isNearCritical: false,
     progress: 0,
     depth: 0,
+    health: 'not_started',
+    expectedProgress: 0,
     ...extra,
   }
 }
@@ -65,7 +67,9 @@ export function sampleProject(): ProjectOut {
       lagUnit: 'working',
       defaultDependency: { type: 'FS', lag: 0 },
       schedulingMode: 'auto',
+      bufferZones: { yellow: 100, red: 120 },
     },
+    baseline: null,
     createdAt: '2026-09-14T09:00:00Z',
     updatedAt: '2026-09-14T09:00:00Z',
     schedule: {
@@ -78,8 +82,8 @@ export function sampleProject(): ProjectOut {
         t6: sched('t6', '6', '2026-10-02', '2026-10-06', { duration: 3 }),
       },
       criticalPath: ['t1', 't2', 't4', 't6'],
-      summary: { taskCount: 6, criticalCount: 4, nearCriticalCount: 0, progress: 32, chainDays: 17, plannedEnd: '2026-10-06', committedEnd: '2026-10-19' },
-      buffer: { method: 'ccpm', chainDays: 17, days: 9, end: '2026-10-19', managementReserveDays: 1, managementReserveEnd: '2026-10-20', percentUsed: 50, note: null, consumedPercent: null, status: null },
+      summary: { taskCount: 6, criticalCount: 4, nearCriticalCount: 0, progress: 32, chainDays: 17, plannedEnd: '2026-10-06', committedEnd: '2026-10-19', lateCount: 0, baselinePlannedEnd: null },
+      buffer: { method: 'ccpm', chainDays: 17, days: 9, start: '2026-10-06', end: '2026-10-19', managementReserveDays: 1, managementReserveEnd: '2026-10-20', percentUsed: 50, note: null, consumedPercent: null, status: null, chainProgress: 32, consumedDays: null },
     },
   }
 }

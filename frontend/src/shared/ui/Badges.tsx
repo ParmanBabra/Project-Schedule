@@ -76,7 +76,7 @@ export function Avatar({ name, color = 'var(--primary)', size = 'sm', className 
     <span
       className={[styles.avatar, size === 'lg' ? styles.avatarLg : styles.avatarSm, className].filter(Boolean).join(' ')}
       style={{ background: color }}
-      aria-label={name}
+      aria-hidden="true"
       title={name}
     >
       {initial}

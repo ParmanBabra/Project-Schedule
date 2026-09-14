@@ -121,3 +121,21 @@ def test_put_replaces_state_for_undo(client: TestClient):
         client.get(f"/api/projects/{pid}").json()["schedule"]["summary"]["plannedEnd"]
         == "2026-10-06"
     )
+
+
+def test_baseline_save_and_clear(client: TestClient):
+    pid, t = sample(client)
+    assert client.get(f"/api/projects/{pid}").json()["schedule"]["buffer"]["status"] is None
+    res = client.post(f"/api/projects/{pid}/baseline")
+    assert res.status_code == 201, res.text
+    body = res.json()
+    assert body["baseline"]["plannedEnd"] == "2026-10-06" and len(body["baseline"]["tasks"]) == 6
+    assert body["schedule"]["buffer"]["status"] == "green"
+    client.patch(f"/api/projects/{pid}/tasks/{t['พัฒนา Backend']}", json={"duration": 9})
+    after = client.get(f"/api/projects/{pid}").json()["schedule"]
+    assert after["buffer"]["consumedDays"] == 3 and after["buffer"]["status"] == "red"
+    assert after["summary"]["baselinePlannedEnd"] == "2026-10-06"
+    res = client.delete(f"/api/projects/{pid}/baseline")
+    assert res.status_code == 200 and res.json()["baseline"] is None
+    empty = create_project(client, name="ว่าง")["id"]
+    assert client.post(f"/api/projects/{empty}/baseline").status_code == 422

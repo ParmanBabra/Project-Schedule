@@ -296,3 +296,76 @@ def test_500_tasks_schedule_under_100ms():
     elapsed = time.perf_counter() - t0
     assert s.summary.task_count == 500
     assert elapsed < 0.1, f"took {elapsed * 1000:.1f} ms"
+
+
+# ------------------------------------------------------------ health / baseline
+
+
+def test_health_linear_marks_late_when_progress_trails_elapsed_time():
+    p = sample_project()  # t2: 17–23 Sep, progress 40
+    s = compute_schedule(p, today=D(2026, 9, 22))  # 4 of 5 working days elapsed -> expected 80
+    assert s.tasks["t2"].expected_progress == 80 and s.tasks["t2"].health == "late"
+    assert s.tasks["t1"].health == "done"
+    assert s.tasks["t4"].health == "not_started"  # starts 24 Sep
+    assert s.summary.late_count == 2  # t2 and t3 (25% vs 100% expected: 17–22 elapsed)
+    early = compute_schedule(p, today=D(2026, 9, 17))
+    assert early.tasks["t2"].health == "on_track" and early.tasks["t2"].expected_progress == 20
+
+
+def test_health_overdue_only_after_end():
+    p = sample_project()
+    p.rules = Rules(late_detection="overdue")
+    assert compute_schedule(p, today=D(2026, 9, 22)).tasks["t2"].health == "on_track"
+    assert compute_schedule(p, today=D(2026, 9, 24)).tasks["t2"].health == "late"
+    assert compute_schedule(p, today=D(2026, 9, 24)).tasks["t2"].expected_progress == 100
+
+
+def test_buffer_consumption_and_fever_zones_after_baseline():
+    from app.core.models import Baseline, BaselineTask, utcnow
+
+    p = sample_project()
+    base = compute_schedule(p)
+    p.baseline = Baseline(
+        saved_at=utcnow(),
+        planned_end=base.summary.planned_end,
+        chain_days=base.summary.chain_days,
+        buffer_days=base.buffer.days,
+        tasks={k: BaselineTask(start=v.start, end=v.end) for k, v in base.tasks.items()},
+    )
+    s = compute_schedule(p)
+    assert s.buffer.consumed_days == 0 and s.buffer.consumed_percent == 0
+    assert s.buffer.status == "green" and s.summary.baseline_planned_end == D(2026, 10, 6)
+
+    # slip the critical chain by 3 working days: consumed 3/9 = 33%, chain progress ~? -> compare
+    p.tasks[3].duration = 9  # พัฒนา Backend 6 -> 9
+    s = compute_schedule(p)
+    assert s.summary.planned_end == D(2026, 10, 9) and s.buffer.consumed_days == 3
+    assert s.buffer.consumed_percent == 33
+    # critical chain progress: t1 100%*3 + t2 40%*5 + t4 0*9 + t6 0*3 = 500/20 = 25%
+    # -> ratio 133% > red 120
+    assert s.buffer.chain_progress == 25 and s.buffer.status == "red"
+
+    p.rules = Rules(buffer_zones={"yellow": 120, "red": 150})
+    assert compute_schedule(p).buffer.status == "yellow"
+
+    p.tasks[3].duration = 20  # eat the whole buffer
+    assert compute_schedule(p).buffer.consumed_percent >= 100
+    assert compute_schedule(p).buffer.status == "red"
+
+
+def test_health_baseline_mode_uses_frozen_dates():
+    from app.core.models import Baseline, BaselineTask, utcnow
+
+    p = sample_project()
+    base = compute_schedule(p)
+    p.baseline = Baseline(
+        saved_at=utcnow(),
+        planned_end=base.summary.planned_end,
+        chain_days=base.summary.chain_days,
+        buffer_days=base.buffer.days,
+        tasks={k: BaselineTask(start=v.start, end=v.end) for k, v in base.tasks.items()},
+    )
+    p.rules = Rules(late_detection="baseline")
+    p.tasks[1].duration = 8  # ออกแบบระบบ now runs to 28 Sep, but baseline says 23 Sep
+    s = compute_schedule(p, today=D(2026, 9, 24))
+    assert s.tasks["t2"].expected_progress == 100 and s.tasks["t2"].health == "late"

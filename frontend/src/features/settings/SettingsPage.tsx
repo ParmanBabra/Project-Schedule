@@ -1,10 +1,12 @@
-import { Check, Copy, Plus, Trash2, X } from 'lucide-react'
+import { Check, Copy, Flag, Plus, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
+  useClearBaseline,
   useDeleteProject,
   useDuplicateProject,
   useProject,
+  useSaveBaseline,
   useUpdateBuffer,
   useUpdateProject,
   useUpdateRules,
@@ -63,6 +65,8 @@ function SettingsForm({ project, methods, rules, mrHelp }: { project: ProjectOut
   const updateTask = useUpdateTask(project.id)
   const duplicate = useDuplicateProject()
   const remove = useDeleteProject()
+  const saveBaseline = useSaveBaseline(project.id)
+  const clearBaseline = useClearBaseline(project.id)
 
   const [name, setName] = useState(project.name)
   const [seenName, setSeenName] = useState(project.name)
@@ -212,6 +216,45 @@ function SettingsForm({ project, methods, rules, mrHelp }: { project: ProjectOut
             <span>= {s.buffer.managementReserveDays} วัน</span>
           </div>
           {chain === 0 && <span className={styles.crumb}>ยังไม่มีงาน เมื่อเพิ่มงานแล้วตัวอย่างจะคำนวณให้ทันที</span>}
+        </Card>
+
+        {/* ---------------------------------------------------------- baseline */}
+        <Card padding="md" className={styles.sec} data-testid="baseline-section">
+          <div className={styles.secHead}>
+            <h2>Baseline และการติดตาม</h2>
+            <p>ล็อกแผนไว้เทียบ เพื่อดูว่าใช้เวลาเผื่อไปเท่าไรและงานไหนล่าช้า</p>
+          </div>
+          {project.baseline ? (
+            <div className={styles.inline} style={{ gap: 'var(--sp-3)' }}>
+              <Chip tone="primary" icon={<Flag size={12} />}>
+                บันทึกเมื่อ {formatThai(project.baseline.savedAt.slice(0, 10), { year: true })}
+              </Chip>
+              <span className={styles.crumb}>
+                เสร็จตามแผนตอนนั้น {formatThai(project.baseline.plannedEnd)} · เผื่อ {project.baseline.bufferDays} วัน (คงที่จนกว่าจะบันทึกใหม่)
+              </span>
+              <span className={styles.spacer} />
+              <Button size="sm" onClick={() => saveBaseline.mutate(undefined, { onSuccess: () => toast.success('บันทึก baseline ใหม่แล้ว'), onError: failed })}>
+                บันทึกใหม่จากแผนปัจจุบัน
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => clearBaseline.mutate(undefined, { onSuccess: () => toast.success('ล้าง baseline แล้ว'), onError: failed })}>
+                ล้าง
+              </Button>
+            </div>
+          ) : (
+            <div className={styles.inline} style={{ gap: 'var(--sp-3)' }}>
+              <span className={styles.crumb}>ยังไม่มี baseline · สถานะการใช้เวลาเผื่อจะเริ่มแสดงหลังบันทึก</span>
+              <span className={styles.spacer} />
+              <Button size="sm" variant="primary" icon={<Flag size={14} />} disabled={project.schedule.summary.taskCount === 0} onClick={() => saveBaseline.mutate(undefined, { onSuccess: () => toast.success('บันทึก baseline แล้ว'), onError: failed })}>
+                บันทึก baseline ตอนนี้
+              </Button>
+            </div>
+          )}
+          {project.schedule.buffer.status && (
+            <div className={styles.ex} style={{ alignSelf: 'flex-start' }}>
+              ใช้เผื่อไป <b>{project.schedule.buffer.consumedPercent}%</b> ({project.schedule.buffer.consumedDays} วัน) ขณะที่งานหลักคืบหน้า <b>{project.schedule.buffer.chainProgress}%</b> →{' '}
+              <b>{project.schedule.buffer.status === 'green' ? 'ยังปลอดภัย' : project.schedule.buffer.status === 'yellow' ? 'จับตา' : 'ต้องแก้'}</b>
+            </div>
+          )}
         </Card>
 
         {/* ------------------------------------------------------------- rules */}
@@ -415,7 +458,15 @@ function RuleCard({ info, project, onSave }: { info: RuleInfo; project: ProjectO
   }
 
   const example =
-    info.id === 'nearCriticalFloatDays' ? `ตอนนี้มี critical ${s.summary.criticalCount} งาน${near > 0 ? ` และใกล้ critical ${s.summary.nearCriticalCount} งาน` : ''}` : info.id === 'progressRollup' ? `ความคืบหน้ารวมตอนนี้ ${s.summary.progress}%` : null
+    info.id === 'nearCriticalFloatDays'
+      ? `ตอนนี้มี critical ${s.summary.criticalCount} งาน${near > 0 ? ` และใกล้ critical ${s.summary.nearCriticalCount} งาน` : ''}`
+      : info.id === 'progressRollup'
+        ? `ความคืบหน้ารวมตอนนี้ ${s.summary.progress}%`
+        : info.id === 'lateDetection'
+          ? `ตอนนี้ล่าช้า ${s.summary.lateCount} งาน`
+          : info.id === 'bufferZones' && s.buffer.status
+            ? `ตอนนี้: ใช้เผื่อ ${s.buffer.consumedPercent}% / คืบหน้า ${s.buffer.chainProgress}% → ${s.buffer.status === 'green' ? 'เขียว' : s.buffer.status === 'yellow' ? 'เหลือง' : 'แดง'}`
+            : null
 
   return (
     <div className={styles.rule} data-testid={`rule-${info.id}`}>
@@ -429,8 +480,21 @@ function RuleCard({ info, project, onSave }: { info: RuleInfo; project: ProjectO
             aria-label={info.title}
             value={currentValue}
             onChange={set}
-            options={listOptions.map((o) => ({ value: o.value, label: o.label, disabled: o.disabled, title: o.help }))}
+            options={listOptions.map((o) => ({
+              value: o.value,
+              label: o.label,
+              disabled: o.value === 'baseline' ? !project.baseline : o.disabled,
+              title: o.value === 'baseline' && !project.baseline ? 'ใช้ได้เมื่อบันทึก baseline แล้ว' : o.help,
+            }))}
           />
+        )}
+        {info.id === 'bufferZones' && (
+          <div className={styles.inline}>
+            <span className={styles.crumb}>เหลือง เมื่อใช้เผื่อเกิน</span>
+            <NumberInput aria-label="โซนเหลือง (%)" value={rules.bufferZones.yellow} min={50} max={300} step={10} suffix="%" onChange={(v) => v !== '' && onSave({ bufferZones: { ...rules.bufferZones, yellow: v } })} />
+            <span className={styles.crumb}>ของความคืบหน้า · แดง เมื่อเกิน</span>
+            <NumberInput aria-label="โซนแดง (%)" value={rules.bufferZones.red} min={60} max={400} step={10} suffix="%" onChange={(v) => v !== '' && onSave({ bufferZones: { ...rules.bufferZones, red: v } })} />
+          </div>
         )}
         {info.id === 'nearCriticalFloatDays' && near > 0 && (
           <div className={styles.inline}>
@@ -444,7 +508,7 @@ function RuleCard({ info, project, onSave }: { info: RuleInfo; project: ProjectO
             <NumberInput aria-label="lag เริ่มต้น (วัน)" value={rules.defaultDependency.lag} min={-365} max={365} suffix="วัน" onChange={(v) => v !== '' && onSave({ defaultDependency: { ...rules.defaultDependency, lag: v } })} />
           </div>
         )}
-        {rangeOptions && (
+        {rangeOptions && info.id !== 'bufferZones' && (
           <div className={styles.inline}>
             <NumberInput
               aria-label={info.title}

@@ -119,6 +119,12 @@ RULES: list[dict[str, Any]] = [
         ],
     },
     {
+        "id": "bufferZones",
+        "title": "สัญญาณการใช้เวลาเผื่อ",
+        "reference": "Fever chart (Critical Chain)",
+        "options": {"min": 50, "max": 400, "step": 10, "default": 100, "unit": "%"},
+    },
+    {
         "id": "schedulingMode",
         "title": "เมื่อลากงานไปวางวันอื่น",
         "reference": "Auto vs manual scheduling",

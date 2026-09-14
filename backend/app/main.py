@@ -14,6 +14,7 @@ from app.core.config import APP_TITLE, APP_VERSION, data_dir
 from app.core.errors import install_error_handlers
 from app.features.assignments.router import router as assignments_router
 from app.features.dependencies.router import router as dependencies_router
+from app.features.projects.baseline import router as baseline_router
 from app.features.projects.router import router as projects_router
 from app.features.resources.router import router as resources_router
 from app.features.scheduling.router import router as scheduling_router
@@ -38,6 +39,7 @@ def create_app() -> FastAPI:
 
     for r in (
         projects_router,
+        baseline_router,
         tasks_router,
         dependencies_router,
         scheduling_router,

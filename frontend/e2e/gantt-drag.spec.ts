@@ -4,6 +4,9 @@ import { seedSampleProject } from '../shots/seed'
 test.skip(({ isMobile }) => isMobile, 'การลากมีเฉพาะ desktop')
 
 async function dragBy(page: Page, selector: string, dx: number, dy = 0) {
+  // the chart auto-scrolls to the project start on mount; measure only after that settled
+  await page.waitForFunction(() => (document.querySelector('[data-testid="gantt-chart"]')?.scrollLeft ?? 0) > 0)
+  await page.waitForTimeout(150)
   const box = await page.locator(selector).boundingBox()
   if (!box) throw new Error(`no box for ${selector}`)
   const x = box.x + Math.min(box.width / 2, 20)
@@ -49,6 +52,7 @@ test('ลากขอบปรับระยะเวลา, ลากเชื
 
   // link ออกแบบ UI -> พัฒนา Backend (new FS dependency)
   const before = await page.locator('[data-testid^="dep-hit-"]').count()
+  await page.waitForFunction(() => (document.querySelector('[data-testid="gantt-chart"]')?.scrollLeft ?? 0) > 0)
   await page.locator(`[data-testid="bar-${uiId}"]`).click()
   const target = page.locator('[data-testid^="task-row-"]').filter({ hasText: 'พัฒนา Backend' })
   const tBox = (await target.boundingBox())!

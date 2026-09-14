@@ -27,19 +27,24 @@ class TaskSchedule(CamelModel):
     is_near_critical: bool
     progress: int
     depth: int
+    health: str = "not_started"  # done | late | on_track | not_started
+    expected_progress: int = 0
 
 
 class BufferResult(CamelModel):
     method: BufferMethod
     chain_days: int
     days: int
+    start: date | None = None  # last planned day before the buffer (baseline end when frozen)
     end: date | None
     management_reserve_days: int
     management_reserve_end: date | None
     percent_used: int | None = None
     note: str | None = None
     consumed_percent: int | None = None
-    status: str | None = None
+    status: str | None = None  # green | yellow | red
+    chain_progress: int = 0
+    consumed_days: int | None = None
 
 
 class ScheduleSummary(CamelModel):
@@ -50,6 +55,8 @@ class ScheduleSummary(CamelModel):
     chain_days: int
     planned_end: date | None
     committed_end: date | None
+    late_count: int = 0
+    baseline_planned_end: date | None = None
 
 
 class Schedule(CamelModel):

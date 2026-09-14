@@ -1,0 +1,98 @@
+.page { display: flex; flex-direction: column; gap: var(--gap-sm); flex: 1; min-height: 0; }
+.toolbar { display: flex; align-items: center; gap: var(--sp-2); padding: 0 var(--sp-2); flex-wrap: wrap; min-height: 44px; }
+.title { margin: 0 var(--sp-2); font-size: var(--fs-h2); font-weight: var(--fw-semibold); min-width: 150px; }
+.spacer { flex: 1; }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.avChip { height: 34px; padding: 0 12px 0 6px; border-radius: var(--r-pill); background: var(--surface); display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-label); color: var(--text-2); box-shadow: var(--sh-seg); }
+.avChipOn { background: var(--primary); color: var(--text-on-primary); }
+
+.card { flex: 1; min-height: 480px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+/* ---- month ---- */
+.month { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.dow { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-bottom: 1px solid var(--border); }
+.dow span { padding: 8px 10px; font-size: var(--fs-label); color: var(--text-3); font-weight: var(--fw-medium); }
+.dow span:nth-child(n + 6) { color: var(--text-4); }
+.weeks { flex: 1; display: grid; grid-template-rows: repeat(6, minmax(112px, 1fr)); overflow: auto; }
+.week { position: relative; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-bottom: 1px solid var(--border-soft); }
+.cell { position: relative; border-right: 1px solid var(--border-soft); padding: 6px 8px; min-height: 112px; }
+.cell:last-child { border-right: 0; }
+.cellOut { background: var(--surface-2); }
+.cellOut .dayNum { color: var(--text-4); }
+.cellWe { background: var(--surface-2); }
+.cellHoliday { background: var(--primary-light); }
+.cellToday .dayNum { background: var(--primary); color: var(--text-on-primary); }
+.cellDrop { outline: 2px dashed var(--primary); outline-offset: -2px; background: rgba(106, 79, 216, 0.08); }
+.dayNum { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 5px; border-radius: var(--r-pill); font-size: var(--fs-label); font-weight: var(--fw-medium); }
+.holName { display: block; font-size: var(--fs-micro); color: var(--primary-dark); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.badge { position: absolute; top: 6px; right: 6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--r-pill); background: var(--critical); color: var(--text-on-primary); font-size: var(--fs-micro); font-weight: var(--fw-semibold); display: inline-flex; align-items: center; justify-content: center; }
+.more { position: absolute; left: 8px; right: 8px; bottom: 4px; font-size: var(--fs-micro); color: var(--text-3); }
+.segLayer { position: absolute; left: 0; right: 0; top: 34px; pointer-events: none; }
+.seg {
+  position: absolute;
+  height: 22px;
+  border-radius: var(--r-pill);
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  color: var(--task-text);
+  background: var(--task);
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: auto;
+  cursor: pointer;
+  text-align: left;
+  border: 0;
+}
+.segCritical { background: var(--critical); color: var(--text-on-primary); }
+.segLate { box-shadow: inset 0 0 0 2px var(--critical); }
+.segSel { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary); }
+.segClipL { border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
+.segClipR { border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
+.segMs { width: 16px !important; height: 16px; border-radius: 4px; transform: rotate(45deg); padding: 0; background: var(--milestone); margin-top: 3px; }
+.segDrag { opacity: 0.5; }
+.segDot { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; margin-right: 6px; background: rgba(255, 255, 255, 0.7); }
+
+/* ---- week by resource ---- */
+.weekView { flex: 1; overflow: auto; }
+.wTable { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.wTable th { position: sticky; top: 0; z-index: 2; background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px; font-size: var(--fs-label); font-weight: var(--fw-medium); color: var(--text-3); text-align: left; }
+.wTable th:first-child { width: 200px; }
+.wTable th.we { color: var(--text-4); background: var(--surface-2); }
+.wTable th.today { color: var(--primary-dark); }
+.wTable td { vertical-align: top; border-bottom: 1px solid var(--border-soft); border-right: 1px solid var(--border-soft); padding: 6px; min-height: 64px; height: 72px; }
+.wTable td:last-child { border-right: 0; }
+.wTable td.we { background: var(--surface-2); }
+.resCell { display: flex; align-items: center; gap: 8px; font-weight: var(--fw-medium); padding: 8px !important; }
+.resSub { font-size: var(--fs-label); color: var(--text-3); font-weight: var(--fw-regular); }
+.over { background: var(--critical-bg) !important; }
+.overPct { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-micro); color: var(--critical-text); font-weight: var(--fw-semibold); margin-bottom: 4px; }
+.wChip { display: flex; align-items: center; gap: 6px; width: 100%; height: 26px; padding: 0 8px; border-radius: var(--r-pill); background: var(--task); color: var(--task-text); font-size: var(--fs-caption); font-weight: var(--fw-medium); white-space: nowrap; overflow: hidden; margin-bottom: 4px; cursor: pointer; text-align: left; border: 0; }
+.wChipCritical { background: var(--critical); color: var(--text-on-primary); }
+.wChipSel { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary); }
+.legend { display: flex; align-items: center; gap: var(--sp-4); flex-wrap: wrap; padding: var(--sp-2) var(--sp-4); border-top: 1px solid var(--border); font-size: var(--fs-label); color: var(--text-2); }
+.legendItem { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 18px; height: 10px; border-radius: 3px; }
+
+/* ---- mobile: day list per resource (docs/ui-design.md 5.4) ---- */
+.dayList { display: none; }
+@media (max-width: 767px) {
+  .toolbar { padding: 0; }
+  .title { min-width: 0; font-size: var(--fs-h3); }
+  .card { min-height: 360px; }
+  .month, .weekView { display: none; }
+  .dayList { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3); overflow: auto; }
+  .day { display: flex; gap: var(--sp-3); padding: 10px 12px; border-radius: 16px; background: var(--surface-2); }
+  .dayOver { background: var(--critical-bg); }
+  .dayWe { background: transparent; }
+  .dn { width: 40px; display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .dn b { font-size: 18px; font-weight: var(--fw-semibold); line-height: 1.1; }
+  .dn span { font-size: var(--fs-caption); color: var(--text-3); }
+  .dayToday .dn b { color: var(--primary); }
+  .dTasks { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .dTasks .wChip { height: 30px; margin: 0; }
+  .free { font-size: var(--fs-label); color: var(--text-4); align-self: center; }
+  .legend { display: none; }
+}

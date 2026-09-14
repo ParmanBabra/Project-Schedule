@@ -223,7 +223,8 @@ def _find_cycle(nodes: dict[str, _Node], edges: list[_Edge]) -> list[str]:
 # ----------------------------------------------------------------------- engine
 
 
-def compute_schedule(project: Project) -> Schedule:
+def compute_schedule(project: Project, today: date | None = None) -> Schedule:
+    today = today or date.today()
     children, by_id = build_tree(project.tasks)
     if not project.working_days:
         raise ValidationFailed("project has no working days")
@@ -438,10 +439,43 @@ def compute_schedule(project: Project) -> Schedule:
         (nid for nid in leaves_all if out[nid].is_critical),
         key=lambda i: (nodes[i].es, nodes[i].ef, i),
     )
+    # ------------------------------------------------------------- health
+    for nid in leaves_all:
+        exp, health = task_health(project, out[nid], nodes[nid].task.progress, cal, today)
+        out[nid].expected_progress = exp
+        out[nid].health = health
+    for nid, n in nodes.items():
+        if n.is_summary:
+            kids = [out[i] for i in n.leaves]
+            if any(k.health == "late" for k in kids):
+                out[nid].health = "late"
+            elif kids and all(k.health == "done" for k in kids):
+                out[nid].health = "done"
+            elif any(k.health in ("on_track", "done") for k in kids):
+                out[nid].health = "on_track"
+            else:
+                out[nid].health = "not_started"
+
     buffer = compute_buffer(project, nodes, cal, project_end, critical_path)
     planned_end = cal.day(project_end - 1) if project_end > 0 else (cal.start if nodes else None)
     if not nodes:
         planned_end = None
+    chain_progress = rolled_progress(critical_path) if critical_path else 0
+    buffer.chain_progress = chain_progress
+    if project.baseline is not None and buffer.days > 0 and planned_end is not None:
+        base_end = project.baseline.planned_end
+        slip = cal.count_working_days(base_end, planned_end) - 1 if planned_end > base_end else 0
+        consumed = max(0, slip)
+        buffer.consumed_days = consumed
+        buffer.consumed_percent = min(999, int(round(consumed * 100 / buffer.days)))
+        z = project.rules.buffer_zones
+        ratio = buffer.consumed_percent / max(chain_progress, 1) * 100
+        if buffer.consumed_percent >= 100 or ratio > z.red:
+            buffer.status = "red"
+        elif ratio > z.yellow or (buffer.consumed_percent > 0 and chain_progress == 0):
+            buffer.status = "yellow"
+        else:
+            buffer.status = "green"
     summary = ScheduleSummary(
         task_count=len(leaves_all),
         critical_count=len(critical_path),
@@ -450,8 +484,43 @@ def compute_schedule(project: Project) -> Schedule:
         chain_days=project_end,
         planned_end=planned_end,
         committed_end=buffer.end,
+        late_count=sum(1 for nid in leaves_all if out[nid].health == "late"),
+        baseline_planned_end=project.baseline.planned_end if project.baseline else None,
     )
     return Schedule(tasks=out, critical_path=critical_path, summary=summary, buffer=buffer)
+
+
+def task_health(
+    project: Project, s: TaskSchedule, progress: int, cal: WorkCalendar, today: date
+) -> tuple[int, str]:
+    """(expected progress %, health) for a leaf task per rules.late_detection (SET-3).
+
+    linear   - expected = working days elapsed inside the task / duration
+    baseline - same, but measured against the baseline window of the task
+    overdue  - late only once the planned end has passed
+    A 10-point tolerance keeps "late" for real slips, not rounding.
+    """
+    if progress >= 100:
+        return 100, "done"
+    mode = project.rules.late_detection
+    start, end = s.start, s.end
+    if mode == "baseline" and project.baseline and s.id in project.baseline.tasks:
+        b = project.baseline.tasks[s.id]
+        start, end = b.start, b.end
+    if today < start:
+        return 0, "not_started"
+    if s.is_milestone:
+        return (100, "late") if today > end else (0, "not_started")
+    if mode == "overdue":
+        if today > end:
+            return 100, "late"
+        return 0, "on_track"
+    total = max(1, cal.count_working_days(start, end))
+    elapsed = total if today > end else min(total, cal.count_working_days(start, today))
+    expected = int(round(elapsed * 100 / total))
+    if progress + 10 < expected:
+        return expected, "late"
+    return expected, ("on_track" if (progress > 0 or expected > 0) else "not_started")
 
 
 def _milestone_date(cal: WorkCalendar, boundary: int) -> date:
@@ -505,14 +574,23 @@ def compute_buffer(
         days = max(days, 1)
 
     mr_days = math.ceil(chain * settings.management_reserve_percent / 100) if chain else 0
-    end = cal.day(project_end + days - 1) if project_end + days > 0 else None
-    mr_end = cal.day(project_end + days + mr_days - 1) if mr_days and end is not None else None
+    # the buffer starts where the plan ends; once a baseline exists it is frozen there
+    boundary = project_end
+    start_day: date | None = cal.day(project_end - 1) if project_end > 0 else None
+    if project.baseline is not None and project.baseline.buffer_days > 0:
+        days = project.baseline.buffer_days
+        boundary = cal.index_of(project.baseline.planned_end) + 1
+        start_day = project.baseline.planned_end
+    end = cal.day(boundary + days - 1) if boundary + days > 0 and days > 0 else None
+    mr_end = cal.day(boundary + days + mr_days - 1) if mr_days and end is not None else None
     if chain == 0:
         end = None
+        start_day = None
     return BufferResult(
         method=settings.method,
         chain_days=chain,
         days=days,
+        start=start_day,
         end=end,
         management_reserve_days=mr_days,
         management_reserve_end=mr_end,

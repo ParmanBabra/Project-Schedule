@@ -296,9 +296,19 @@ export function GanttChart({
                 ) : (
                   <span className={styles.caretSpace} />
                 )}
-                <button type="button" className={styles.nameBtn} title={r.task.name} onClick={() => onSelect(r.task.id)}>
+                <button
+                  type="button"
+                  className={styles.nameBtn}
+                  title={r.schedule.health === 'late' ? `${r.task.name} · ล่าช้า (ควรได้ ${r.schedule.expectedProgress}% ได้ ${r.task.progress}%)` : r.task.name}
+                  onClick={() => onSelect(r.task.id)}
+                >
                   <Dot row={r} highlight={highlightCritical} />
                   <span className={styles.name}>{r.task.name}</span>
+                  {r.schedule.health === 'late' && (
+                    <span className={styles.lateTag} data-testid={`late-${r.task.id}`}>
+                      ล่าช้า
+                    </span>
+                  )}
                 </button>
               </div>
             ))}
@@ -479,7 +489,7 @@ function Dot({ row, highlight }: { row: ReturnType<typeof buildOutline>[number];
 
 function BufferRow({ project, axis, rowIdx, schedule }: { project: ProjectOut; axis: ReturnType<typeof computeAxis>; rowIdx: number; schedule: Schedule }) {
   const b = schedule.buffer
-  const planned = schedule.summary.plannedEnd
+  const planned = b.start ?? schedule.summary.plannedEnd
   if (!planned || !b.end) return null
   const x1 = xOfDayEnd(axis, planned)
   const x2 = xOfDayEnd(axis, b.end)

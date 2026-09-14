@@ -1,9 +1,9 @@
-import { CalendarDays, List, Plus, Redo2, Undo2 } from 'lucide-react'
+import { CalendarDays, Flag, List, Plus, Redo2, Undo2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useCanUndoRedo, useHistory } from '@/features/history/store'
-import { projectKeys, useAddDependency, useProject, useReplaceState, useUpdateTask } from '@/features/projects/api'
+import { projectKeys, useAddDependency, useProject, useReplaceState, useSaveBaseline, useUpdateTask } from '@/features/projects/api'
 import type { ProjectOut, Task } from '@/features/projects/types'
 import { useWorkload } from '@/features/resources/api'
 import { useSchedulePreview } from '@/features/settings/api'
@@ -55,6 +55,7 @@ export function GanttPage() {
   const updateTask = useUpdateTask(projectId)
   const addDependency = useAddDependency(projectId)
   const replaceState = useReplaceState(projectId)
+  const saveBaseline = useSaveBaseline(projectId)
   const qc = useQueryClient()
   const toast = useToast()
   const [params, setParams] = useSearchParams()
@@ -258,10 +259,38 @@ export function GanttPage() {
                   เกินกำลัง {overCount} คน
                 </Chip>
               )}
+              {s.lateCount > 0 && (
+                <Chip tone="critical" data-testid="chip-late">
+                  ล่าช้า {s.lateCount} งาน
+                </Chip>
+              )}
               {b.days > 0 && (
-                <Chip tone={b.status === 'red' ? 'critical' : b.status === 'yellow' ? 'warn' : 'green'} data-testid="chip-buffer">
+                <Chip
+                  tone={b.status === 'red' ? 'critical' : b.status === 'yellow' ? 'warn' : 'green'}
+                  data-testid="chip-buffer"
+                  title={
+                    b.status
+                      ? `ใช้เผื่อไป ${b.consumedPercent}% ขณะที่งานหลักคืบหน้า ${b.chainProgress}% · ${b.status === 'green' ? 'ยังปลอดภัย' : b.status === 'yellow' ? 'จับตา' : 'ต้องแก้'}`
+                      : 'บันทึก baseline เพื่อเริ่มติดตามการใช้เวลาเผื่อ'
+                  }
+                >
                   เผื่อ {b.days} วัน{b.consumedPercent !== null ? ` · ใช้ไป ${b.consumedPercent}%` : ''}
                 </Chip>
+              )}
+              {!p.baseline && (
+                <Button
+                  size="sm"
+                  icon={<Flag size={14} />}
+                  title="ล็อกแผนปัจจุบันไว้เทียบ เพื่อดูว่าใช้เวลาเผื่อไปเท่าไร"
+                  onClick={() =>
+                    saveBaseline.mutate(undefined, {
+                      onSuccess: () => toast.success('บันทึก baseline แล้ว เริ่มติดตามการใช้เวลาเผื่อ'),
+                      onError: () => toast.error('บันทึก baseline ไม่สำเร็จ'),
+                    })
+                  }
+                >
+                  บันทึก baseline
+                </Button>
               )}
               <Chip tone="soft" data-testid="chip-dates">
                 เสร็จตามแผน {formatThai(s.plannedEnd)} · สัญญาส่ง {formatThai(s.committedEnd)}

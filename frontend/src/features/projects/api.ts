@@ -171,3 +171,11 @@ export function useDeleteDependency(id: string) {
     id,
   )
 }
+
+export function useSaveBaseline(id: string) {
+  return useProjectMutation(() => api<ProjectOut>(`/projects/${id}/baseline`, { method: 'POST' }), id, false)
+}
+
+export function useClearBaseline(id: string) {
+  return useProjectMutation(() => api<ProjectOut>(`/projects/${id}/baseline`, { method: 'DELETE' }), id, false)
+}
