@@ -15,7 +15,7 @@
     "test:e2e:ui": "playwright test --ui",
     "shots": "node -e \"require('fs').rmSync('../.e2e-data',{recursive:true,force:true})\" && playwright test --config shots/playwright.shots.config.ts",
     "test:visual": "node -e \"require('fs').rmSync('../.e2e-data',{recursive:true,force:true})\" && playwright test e2e/visual.spec.ts",
-    "visual:approve": "node -e \"require('fs').rmSync('../.e2e-data',{recursive:true,force:true})\" && playwright test e2e/visual.spec.ts --update-snapshots"
+    "visual:approve": "node -e \"require('fs').rmSync('../.e2e-data',{recursive:true,force:true})\" && playwright test e2e/visual.spec.ts --update-snapshots=all"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",
