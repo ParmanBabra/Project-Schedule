@@ -10,7 +10,7 @@ test('Gantt แสดง critical path, buffer และเพิ่มงาน
   await expect(page.getByTestId('chip-dates')).toContainText('สัญญาส่ง 19 ต.ค.')
   await expect(page.getByTestId('buffer-bar')).toBeVisible()
   await expect(page.locator('[data-testid^="bar-"][data-critical="true"]')).toHaveCount(4)
-  await expect(page.locator('[data-testid^="dep-"]')).toHaveCount(7)
+  await expect(page.locator('[data-testid^="dep-d_"]')).toHaveCount(7)
 
   // group row shows and collapses
   const group = page.getByRole('button', { name: 'ยุบกลุ่ม' })

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/shared/api/client'
-import type { BufferSettings, Rules, Schedule } from '@/features/projects/types'
+import type { BufferSettings, Rules, Schedule, Task } from '@/features/projects/types'
 
 export interface BufferMethodInfo {
   id: 'ccpm' | 'percent' | 'pert'
@@ -39,6 +39,7 @@ export function useSettingsDefaults() {
 }
 
 export interface PreviewDraft {
+  patchTasks?: Task[]
   buffer?: BufferSettings
   rules?: Rules
   holidays?: string[]

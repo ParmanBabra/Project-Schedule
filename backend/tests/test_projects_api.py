@@ -85,3 +85,39 @@ def test_backups_are_written_on_every_save(client: TestClient, data_dir: Path):
     for i in range(3):
         client.patch(f"/api/projects/{pid}", json={"name": f"v{i}"})
     assert len(list((data_dir / "backups" / pid).glob("*.json"))) == 3
+
+
+def test_put_replaces_state_for_undo(client: TestClient):
+    pid, t = sample(client)
+    before = client.get(f"/api/projects/{pid}").json()
+    client.patch(f"/api/projects/{pid}/tasks/{t['พัฒนา Backend']}", json={"duration": 10})
+    assert (
+        client.get(f"/api/projects/{pid}").json()["schedule"]["summary"]["plannedEnd"]
+        == "2026-10-12"
+    )
+    body = {
+        k: before[k]
+        for k in (
+            "name",
+            "startDate",
+            "holidays",
+            "workingDays",
+            "tasks",
+            "dependencies",
+            "assignments",
+            "buffer",
+            "rules",
+        )
+    }
+    res = client.put(f"/api/projects/{pid}", json=body)
+    assert res.status_code == 200, res.text
+    assert res.json()["schedule"]["summary"]["plannedEnd"] == "2026-10-06"
+    # a cyclic snapshot is rejected and nothing changes
+    body["dependencies"].append(
+        {"id": "d_bad", "from": t["ทดสอบระบบ"], "to": t["รวบรวมความต้องการ"], "type": "FS", "lag": 0}
+    )
+    assert client.put(f"/api/projects/{pid}", json=body).status_code == 422
+    assert (
+        client.get(f"/api/projects/{pid}").json()["schedule"]["summary"]["plannedEnd"]
+        == "2026-10-06"
+    )

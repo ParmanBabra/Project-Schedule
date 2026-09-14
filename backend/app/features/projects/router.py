@@ -7,6 +7,7 @@ from app.core.models import BufferSettings, CamelModel, Rules
 from . import service
 from .repository import ProjectRepository, get_repo
 from .schemas import ProjectCreate, ProjectListItem, ProjectOut, ProjectUpdate
+from .state import ProjectState
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -35,6 +36,13 @@ def update_project(
     project_id: str, body: ProjectUpdate, repo: ProjectRepository = Depends(get_repo)
 ) -> ProjectOut:
     return service.update_project(repo, project_id, body)
+
+
+@router.put("/{project_id}", response_model=ProjectOut)
+def replace_project_state(
+    project_id: str, body: ProjectState, repo: ProjectRepository = Depends(get_repo)
+) -> ProjectOut:
+    return service.replace_state(repo, project_id, body)
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)

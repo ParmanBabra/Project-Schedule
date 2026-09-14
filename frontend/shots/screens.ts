@@ -32,6 +32,25 @@ export const screens: Screen[] = [
     setup: async (page) => { await page.getByRole('button', { name: /^ออกแบบระบบ/ }).first().click() },
   },
   { name: 'gantt-task-list', path: gantt, setup: async (page) => { await page.getByRole('button', { name: 'รายการงาน' }).click() } },
+  {
+    name: 'gantt-dragging',
+    path: gantt,
+    viewports: ['desktop'],
+    setup: async (page) => {
+      const bar = page.locator('[data-testid^="bar-"]').filter({ hasText: 'พัฒนา Backend' })
+      const box = (await bar.boundingBox())!
+      await page.mouse.move(box.x + 20, box.y + box.height / 2)
+      await page.mouse.down()
+      await page.mouse.move(box.x + 20 + 5 * 36, box.y + box.height / 2, { steps: 6 })
+      await page.waitForTimeout(400)
+    },
+  },
+  {
+    name: 'gantt-dep-popover',
+    path: gantt,
+    viewports: ['desktop'],
+    setup: async (page) => { await page.locator('[data-testid^="dep-hit-"]').last().click({ force: true }) },
+  },
   { name: 'settings', path: async (r) => `/p/${await seedSampleProject(r)}/settings`, mockup: { desktop: 'SettingsDesktop', mobile: 'SettingsMobile' } },
   { name: 'ui-kit', path: '/dev/ui', viewports: ['desktop'] },
 ]

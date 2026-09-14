@@ -7,6 +7,7 @@ from app.features.scheduling.engine import compute_schedule
 
 from .repository import ProjectRepository
 from .schemas import ProjectCreate, ProjectListItem, ProjectOut, ProjectUpdate
+from .state import ProjectState
 
 
 def to_out(project: Project) -> ProjectOut:
@@ -109,4 +110,20 @@ def update_rules(repo: ProjectRepository, project_id: str, rules: Rules) -> Proj
 def update_buffer(repo: ProjectRepository, project_id: str, buffer: BufferSettings) -> ProjectOut:
     project = repo.get(project_id)
     project.buffer = buffer
+    return validate_and_save(repo, project)
+
+
+def replace_state(repo: ProjectRepository, project_id: str, state: ProjectState) -> ProjectOut:
+    """Replace every editable field at once (undo/redo). Validated like any other edit."""
+    project = repo.get(project_id)
+    _check_working_days(state.working_days)
+    project.name = state.name
+    project.start_date = state.start_date
+    project.holidays = sorted(set(state.holidays))
+    project.working_days = sorted(set(state.working_days))
+    project.tasks = state.tasks
+    project.dependencies = state.dependencies
+    project.assignments = state.assignments
+    project.buffer = state.buffer
+    project.rules = state.rules
     return validate_and_save(repo, project)

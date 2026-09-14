@@ -33,7 +33,7 @@ describe('GanttPage', () => {
     expect(screen.getByTestId('chip-dates')).toHaveTextContent('เสร็จตามแผน 6 ต.ค. · สัญญาส่ง 19 ต.ค.')
     expect(screen.getByTestId('bar-t2')).toHaveAttribute('data-critical', 'true')
     expect(screen.getByTestId('bar-t3')).not.toHaveAttribute('data-critical')
-    expect(screen.getAllByTestId(/^dep-/)).toHaveLength(6)
+    expect(screen.getAllByTestId(/^dep-d\d+$/)).toHaveLength(6)
     expect(screen.getByTestId('buffer-bar')).toHaveAttribute('title', 'เผื่อ 9 วัน')
     expect(screen.getByText('สำรองเวลาโครงการ')).toBeInTheDocument()
   })
