@@ -1,5 +1,5 @@
 import type { APIRequestContext, Page } from '@playwright/test'
-import { seedSampleProject } from './seed'
+import { seedResources, seedSampleProject } from './seed'
 
 /**
  * Registry of every screen/state that design review and visual regression cover.
@@ -52,6 +52,8 @@ export const screens: Screen[] = [
     setup: async (page) => { await page.locator('[data-testid^="dep-hit-"]').last().click({ force: true }) },
   },
   { name: 'settings', path: async (r) => `/p/${await seedSampleProject(r)}/settings`, mockup: { desktop: 'SettingsDesktop', mobile: 'SettingsMobile' } },
+  { name: 'resources', path: async (r) => { await seedSampleProject(r); await seedResources(r); return '/resources' } },
+  { name: 'resources-edit', path: async (r) => { await seedSampleProject(r); return '/resources' }, setup: async (page) => { await page.getByRole('button', { name: 'ตัวเลือกของ สุดา' }).click(); await page.getByRole('menuitem', { name: 'แก้ไข' }).click() } },
   { name: 'ui-kit', path: '/dev/ui', viewports: ['desktop'] },
 ]
 

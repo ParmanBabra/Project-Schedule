@@ -4,7 +4,8 @@ import { useMoveTask, useReorderTasks } from '@/features/projects/api'
 import type { ProjectOut } from '@/features/projects/types'
 import { ApiError } from '@/shared/api/client'
 import { formatThai } from '@/shared/lib/date'
-import { Button, Drawer, IconButton, useToast } from '@/shared/ui'
+import { useResources } from '@/features/resources/api'
+import { Avatar, Button, Drawer, IconButton, useToast } from '@/shared/ui'
 import { buildOutline } from './lib/outline'
 import styles from './taskList.module.css'
 
@@ -25,6 +26,8 @@ export function TaskListDrawer({ project, open, onClose, selectedId, onSelect, o
   const toast = useToast()
   const reorder = useReorderTasks(project.id)
   const move = useMoveTask(project.id)
+  const resources = useResources()
+  const resById = useMemo(() => new Map((resources.data ?? []).map((r) => [r.id, r])), [resources.data])
   const rows = useMemo(() => buildOutline({ ...project, tasks: project.tasks.map((t) => ({ ...t, collapsed: false })) }), [project])
   const byParent = useMemo(() => {
     const m = new Map<string | null, string[]>()
@@ -94,6 +97,7 @@ export function TaskListDrawer({ project, open, onClose, selectedId, onSelect, o
             <th className={styles.date}>สิ้นสุด</th>
             <th className={styles.num}>Float</th>
             <th className={styles.num}>%</th>
+            <th className={styles.who}>ผู้ทำ</th>
             <th className={styles.actions}>จัดลำดับ</th>
           </tr>
         </thead>
@@ -128,6 +132,14 @@ export function TaskListDrawer({ project, open, onClose, selectedId, onSelect, o
                 <td className={styles.date}>{formatThai(r.schedule.end)}</td>
                 <td className={[styles.num, r.schedule.isCritical && styles.crit].filter(Boolean).join(' ')}>{r.schedule.totalFloat}</td>
                 <td className={styles.num}>{r.schedule.progress}</td>
+                <td className={styles.who}>
+                  <span className={styles.avatars}>
+                    {project.assignments.filter((a) => a.taskId === r.task.id).map((a) => {
+                      const res = resById.get(a.resourceId)
+                      return res ? <Avatar key={a.id} name={res.name} color={res.color} /> : null
+                    })}
+                  </span>
+                </td>
                 <td className={styles.actions} onClick={(e) => e.stopPropagation()}>
                   <IconButton label="เลื่อนขึ้น" disabled={idx <= 0} onClick={() => swap(r.task.id, -1)}>
                     <ArrowUp size={14} />

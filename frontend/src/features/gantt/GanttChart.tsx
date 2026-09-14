@@ -126,7 +126,7 @@ export function GanttChart({
     (clientY: number): string | null => {
       const el = timeRef.current
       if (!el) return null
-      const top = el.getBoundingClientRect().top + (scrollRef.current?.scrollTop ?? 0) * 0
+      const top = el.getBoundingClientRect().top
       const idx = Math.floor((clientY - top) / ROW_HEIGHT)
       return rows[idx]?.task.id ?? null
     },

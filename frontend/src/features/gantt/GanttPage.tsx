@@ -5,10 +5,11 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { useCanUndoRedo, useHistory } from '@/features/history/store'
 import { projectKeys, useAddDependency, useProject, useReplaceState, useUpdateTask } from '@/features/projects/api'
 import type { ProjectOut, Task } from '@/features/projects/types'
+import { useWorkload } from '@/features/resources/api'
 import { useSchedulePreview } from '@/features/settings/api'
 import { TaskPanel } from '@/features/tasks/TaskPanel'
 import { ApiError } from '@/shared/api/client'
-import { formatThai } from '@/shared/lib/date'
+import { formatThai, todayISO } from '@/shared/lib/date'
 import { Button, Card, Chip, EmptyState, IconButton, Segment, Skeleton, Toggle, useToast } from '@/shared/ui'
 import { AddTaskDialog } from './AddTaskDialog'
 import { DependencyPopover } from './DependencyPopover'
@@ -66,6 +67,11 @@ export function GanttPage() {
   const [dragPatch, setDragPatch] = useState<DragPatch | null>(null)
   const [popover, setPopover] = useState<{ depId: string; x: number; y: number } | null>(null)
   const { canUndo, canRedo } = useCanUndoRedo(projectId)
+  const wlFrom = project.data?.startDate ?? todayISO()
+  const wlTo = project.data?.schedule.summary.plannedEnd ?? wlFrom
+  const projectResourceIds = useMemo(() => Array.from(new Set((project.data?.assignments ?? []).map((a) => a.resourceId))), [project.data?.assignments])
+  const workload = useWorkload(wlFrom, wlTo, projectId, projectResourceIds.length > 0, projectResourceIds)
+  const overCount = new Set((workload.data?.overallocations ?? []).map((o) => o.resourceId)).size
 
   const setZoom = (z: Zoom) => {
     setZoomState(z)
@@ -247,6 +253,11 @@ export function GanttPage() {
                 Critical {s.criticalCount} งาน
               </Chip>
               {s.nearCriticalCount > 0 && <Chip tone="warn">ใกล้ critical {s.nearCriticalCount}</Chip>}
+              {overCount > 0 && (
+                <Chip tone="warn" data-testid="chip-overallocation" title="ดูรายละเอียดในหน้าทรัพยากร">
+                  เกินกำลัง {overCount} คน
+                </Chip>
+              )}
               {b.days > 0 && (
                 <Chip tone={b.status === 'red' ? 'critical' : b.status === 'yellow' ? 'warn' : 'green'} data-testid="chip-buffer">
                   เผื่อ {b.days} วัน{b.consumedPercent !== null ? ` · ใช้ไป ${b.consumedPercent}%` : ''}

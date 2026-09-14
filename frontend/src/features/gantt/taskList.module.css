@@ -17,3 +17,7 @@
 @media (max-width: 767px) {
   .date, .table th:nth-child(4), .table th:nth-child(5) { display: none; }
 }
+.who { width: 80px; }
+.avatars { display: inline-flex; gap: 2px; }
+.avatars > * { margin-left: -6px; box-shadow: 0 0 0 2px var(--surface); }
+.avatars > *:first-child { margin-left: 0; }

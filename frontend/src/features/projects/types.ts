@@ -198,3 +198,72 @@ export interface DependencyCreate {
 export interface ApiErrorBody {
   error: { code: string; message: string; details?: unknown }
 }
+
+// ------------------------------------------------------------ resources
+
+export type ResourceType = 'person' | 'equipment'
+
+export interface Resource {
+  id: string
+  name: string
+  type: ResourceType
+  capacityPerDay: number
+  color: string
+  daysOff: string[]
+}
+
+export interface ResourceOut extends Resource {
+  assignmentCount: number
+  projectCount: number
+}
+
+export interface ResourceCreate {
+  name: string
+  type?: ResourceType
+  capacityPerDay?: number
+  color?: string | null
+  daysOff?: string[]
+}
+
+export type ResourceUpdate = Partial<Omit<Resource, 'id'>>
+
+export interface WorkloadItem {
+  projectId: string
+  projectName: string
+  taskId: string
+  taskName: string
+  units: number
+}
+
+export interface WorkloadDay {
+  date: string
+  load: number
+  capacity: number
+  over: boolean
+  off: boolean
+  items: WorkloadItem[]
+}
+
+export interface ResourceWorkload {
+  resource: Resource
+  days: WorkloadDay[]
+  peak: number
+  overDays: number
+}
+
+export interface Overallocation {
+  resourceId: string
+  resourceName: string
+  date: string
+  load: number
+  capacity: number
+  items: WorkloadItem[]
+}
+
+export interface WorkloadResponse {
+  from: string
+  to: string
+  threshold: number
+  resources: ResourceWorkload[]
+  overallocations: Overallocation[]
+}

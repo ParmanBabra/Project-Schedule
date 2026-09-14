@@ -106,3 +106,7 @@
 @media (max-width: 767px) {
   .backdrop { display: block; position: fixed; inset: 0; background: rgba(47, 42, 74, 0.35); z-index: 44; }
 }
+.asgRow { display: grid; grid-template-columns: 24px minmax(0, 1fr) 88px 32px; align-items: center; gap: 8px; min-height: var(--h-input); border-radius: var(--r-input); background: var(--surface-3); padding: 4px 4px 4px var(--sp-3); }
+.asgRow input { height: 30px; background: var(--surface); border-radius: 8px; font-size: var(--fs-label); padding: 0 26px 0 8px; }
+.warnBox { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--warn-bg); color: var(--warn-text); font-size: var(--fs-label); line-height: 1.4; }
+.warnBox svg { flex-shrink: 0; color: var(--warn-icon); margin-top: 1px; }

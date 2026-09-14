@@ -486,3 +486,12 @@ GET    /api/settings/defaults          # default ทั้งหมดพร้�
 - **Undo/redo** เก็บ snapshot ของโปรเจกต์ก่อนทุก mutation ที่ผูกกับโปรเจกต์ (สูงสุด 50) การเลิกทำส่ง snapshot ทั้งก้อนผ่าน `PUT /api/projects/{id}` (รับเฉพาะฟิลด์ที่แก้ได้ ตรวจ cycle เหมือนปกติ) ประวัติอยู่ในหน่วยความจำ หายเมื่อ refresh
 - **คีย์ลัด** N เพิ่มงาน · 1/2/3 zoom · T วันนี้ · C สลับ critical · Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y ไม่ทำงานขณะพิมพ์ในช่องกรอกหรือเมื่อมี dialog เปิด (ยกเว้น undo/redo ที่ทำงานเสมอเว้นแต่กำลังพิมพ์)
 - **อุปกรณ์สัมผัส** ไม่เริ่มการลาก (pointerType touch) ตามสเปกมือถือ ใช้แผงงานปรับค่าแทน
+
+## 9. รายละเอียดที่สรุปตอนพัฒนา (Phase 4 – ทรัพยากร)
+
+- **ไฟล์ resources.json** มี backup 20 ชุดที่ `data/backups/resources/` สีทรัพยากรวนจาก palette 7 สีเมื่อไม่ระบุ
+- **`GET /api/resources`** คืน `assignmentCount` และ `projectCount` รวมทุกโปรเจกต์ · **`DELETE /api/resources/{id}`** ตอบ 409 พร้อมรายชื่อโปรเจกต์ที่ใช้อยู่ ต้องส่ง `?force=true` เพื่อถอดออกจากทุกงานแล้วลบ
+- **Assignments** `POST /projects/{id}/assignments` (taskId, resourceId, units) ห้ามซ้ำคู่ task+resource · `PATCH .../{asgId}` แก้ units · `DELETE .../{asgId}` ทุกตัวตอบ `ProjectOut` และเข้าประวัติ undo
+- **Workload** `GET /api/resources/workload?from&to&projectId&resourceId=…` คำนวณสดจาก schedule ของทุกโปรเจกต์ (เฉพาะ leaf task ไม่รวม milestone) ต่อวันทำงานของโปรเจกต์นั้น `over` เมื่อ load > capacity × threshold/100 หรือเป็นวันลาของทรัพยากร (capacity 0) `threshold` มาจาก `rules.overallocationThreshold` ของ projectId ที่ส่ง ไม่ส่งใช้ 100 ช่วงสูงสุด 400 วัน
+- **UI** ชิป "เกินกำลัง N คน" บน Gantt และคำเตือนในแผงงานกรองเฉพาะทรัพยากรที่เกี่ยวข้อง (ส่ง resourceId) เพื่อไม่ให้โปรเจกต์อื่นมารบกวน · หน้าทรัพยากรรวมวันเกินกำลังที่ติดกัน (ข้ามสุดสัปดาห์ได้) ของงานชุดเดียวกันเป็นแถวเดียว · ช่วงความร้อนเริ่มที่สัปดาห์ปัจจุบัน 14 วัน เปลี่ยนวันเริ่มได้ · เปิดจาก `/resources?project=<id>` เพื่อใช้เกณฑ์ของโปรเจกต์นั้น
+- **มือถือ** ตารางทรัพยากรกลายเป็นการ์ดต่อคน (ตาม ui-design 5.5) ยังไม่มี bottom sheet แก้ไข ใช้ dialog เดิมซึ่งเป็น sheet อยู่แล้ว

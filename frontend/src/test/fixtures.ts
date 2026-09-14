@@ -84,14 +84,14 @@ export function sampleProject(): ProjectOut {
   }
 }
 
-export function mockFetch(handlers: Record<string, (init?: RequestInit) => unknown | Response>) {
+export function mockFetch(handlers: Record<string, (init?: RequestInit, url?: string) => unknown | Response>) {
   return async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input.toString()
     const path = url.replace(/^\/api/, '').split('?')[0]
     const key = `${init?.method ?? 'GET'} ${path}`
     const handler = handlers[key]
     if (!handler) return new Response(JSON.stringify({ error: { code: 'not_found', message: key } }), { status: 404 })
-    const out = handler(init)
+    const out = handler(init, url)
     return out instanceof Response ? out : new Response(JSON.stringify(out), { status: 200 })
   }
 }

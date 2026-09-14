@@ -23,6 +23,7 @@ import {
   Toggle,
   useToast,
 } from '@/shared/ui'
+import { AssignmentSection } from './AssignmentSection'
 import styles from './taskPanel.module.css'
 
 export interface TaskPanelProps {
@@ -316,6 +317,8 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
               ))}
             </div>
           )}
+
+          <AssignmentSection project={project} taskId={taskId} />
 
           <div className={[styles.cpm, !schedule.isCritical && styles.cpmSoft].filter(Boolean).join(' ')} data-testid="cpm-box">
             <div className={styles.cpmTitle}>Critical Path Method</div>
