@@ -2,6 +2,8 @@ import { CalendarDays, Flag, List, Plus, Redo2, Undo2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useParams, useSearchParams } from 'react-router-dom'
+import { useUiStore } from '@/app/layout/uiStore'
+import { useIsMobile } from '@/shared/lib/useIsMobile'
 import { useCanUndoRedo, useHistory } from '@/features/history/store'
 import { projectKeys, useAddDependency, useProject, useReplaceState, useSaveBaseline, useUpdateTask } from '@/features/projects/api'
 import type { ProjectOut, Task } from '@/features/projects/types'
@@ -68,6 +70,11 @@ export function GanttPage() {
   const [dragPatch, setDragPatch] = useState<DragPatch | null>(null)
   const [popover, setPopover] = useState<{ depId: string; x: number; y: number } | null>(null)
   const { canUndo, canRedo } = useCanUndoRedo(projectId)
+  const addTaskRequest = useUiStore((s) => s.addTaskRequest)
+  const isMobile = useIsMobile()
+  useEffect(() => {
+    if (addTaskRequest > 0) setAdding(true)
+  }, [addTaskRequest])
   const wlFrom = project.data?.startDate ?? todayISO()
   const wlTo = project.data?.schedule.summary.plannedEnd ?? wlFrom
   const projectResourceIds = useMemo(() => Array.from(new Set((project.data?.assignments ?? []).map((a) => a.resourceId))), [project.data?.assignments])
@@ -225,7 +232,8 @@ export function GanttPage() {
     { value: 'day' as const, label: 'วัน', title: 'คีย์ 1' },
     { value: 'week' as const, label: 'สัปดาห์', title: 'คีย์ 2' },
     { value: 'month' as const, label: 'เดือน', title: 'คีย์ 3' },
-  ]
+  ].filter((o) => !isMobile || o.value !== 'day') // มือถือไม่มีซูมรายวัน (ui-design §5.2)
+  const effectiveZoom: Zoom = isMobile && zoom === 'day' ? 'week' : zoom
 
   return (
     <div className={styles.page}>
@@ -233,11 +241,19 @@ export function GanttPage() {
         <Button size="sm" icon={<List size={16} />} onClick={() => setListOpen(true)} aria-label="รายการงาน" disabled={p.tasks.length === 0}>
           <span className={styles.todayLabel}>รายการงาน</span>
         </Button>
-        <Segment<Zoom> aria-label="ระดับการซูม" variant="white" value={zoom} onChange={setZoom} options={zoomOptions} />
-        <Button size="sm" icon={<CalendarDays size={16} />} onClick={() => setScrollToken((n) => n + 1)} aria-label="เลื่อนไปวันนี้" title="คีย์ T">
+        <Segment<Zoom> aria-label="ระดับการซูม" variant="white" value={effectiveZoom} onChange={setZoom} options={zoomOptions} />
+        <Button size="sm" className={styles.todayBtn} icon={<CalendarDays size={16} />} onClick={() => setScrollToken((n) => n + 1)} aria-label="เลื่อนไปวันนี้" title="คีย์ T">
           <span className={styles.todayLabel}>วันนี้</span>
         </Button>
-        <Toggle checked={highlight} onChange={setHighlight} label="Critical path" />
+        <span className={styles.cpToggle}>
+          <Toggle checked={highlight} onChange={setHighlight} label="Critical path" />
+        </span>
+        {isMobile && p.tasks.length > 0 ? (
+          <button type="button" className={styles.todayFab} onClick={() => setScrollToken((n) => n + 1)} aria-label="เลื่อนไปวันนี้ (ลอย)" data-testid="today-fab">
+            <CalendarDays size={18} />
+            วันนี้
+          </button>
+        ) : null}
         <span className={styles.undoGroup}>
           <IconButton label="เลิกทำ (Ctrl+Z)" onClick={undo} disabled={!canUndo}>
             <Undo2 size={16} />
@@ -321,7 +337,7 @@ export function GanttPage() {
           <>
             <GanttChart
               project={p}
-              zoom={zoom}
+              zoom={effectiveZoom}
               highlightCritical={highlight}
               selectedId={selectedId}
               onSelect={select}

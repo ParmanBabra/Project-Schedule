@@ -2,6 +2,7 @@ import { Calendar, ChevronDown, FolderKanban, GanttChartSquare, MoreHorizontal, 
 import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom'
 import { useProject, useProjects } from '@/features/projects/api'
 import { IconButton, Menu } from '@/shared/ui'
+import { BottomNav } from './BottomNav'
 import styles from './AppShell.module.css'
 
 /**
@@ -62,6 +63,7 @@ export function AppShell() {
       <main className={styles.main}>
         <Outlet />
       </main>
+      <BottomNav />
     </div>
   )
 }

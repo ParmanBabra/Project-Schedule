@@ -1,5 +1,5 @@
 import { AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useCallback, useMemo, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useCallback, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type TouchEvent as ReactTouchEvent } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useProject, useUpdateTask } from '@/features/projects/api'
 import type { ProjectOut, Resource } from '@/features/projects/types'
@@ -40,6 +40,7 @@ export function CalendarPage() {
   const [filter, setFilter] = useState<string[]>([])
   const [dropDate, setDropDate] = useState<string | null>(null)
   const [dragId, setDragId] = useState<string | null>(null)
+  const touchStartX = useRef<number | null>(null)
 
   const select = useCallback(
     (id: string | null) => {
@@ -139,6 +140,16 @@ export function CalendarPage() {
   const holidays = new Set(p.holidays)
   const title = view === 'month' ? formatThaiMonth(startOfMonthISO(anchor)) : `${formatThai(rangeStart)} – ${formatThai(rangeEnd, { year: true })}`
   const shift = (dir: -1 | 1) => setAnchor(view === 'month' ? addMonths(startOfMonthISO(anchor), dir) : addDays(startOfWeekISO(anchor), dir * 7))
+  const onTouchStart = (e: ReactTouchEvent) => {
+    touchStartX.current = e.touches[0]?.clientX ?? null
+  }
+  const onTouchEnd = (e: ReactTouchEvent) => {
+    const start = touchStartX.current
+    touchStartX.current = null
+    if (start === null) return
+    const dx = (e.changedTouches[0]?.clientX ?? start) - start
+    if (Math.abs(dx) > 60) setAnchor(addDays(startOfWeekISO(anchor), dx < 0 ? 7 : -7)) // swipe left = next week
+  }
   const resourcesInProject = (resources.data ?? []).filter((r) => projectResourceIds.includes(r.id))
   const overCount = new Set((workload.data?.overallocations ?? []).map((o) => o.resourceId)).size
 
@@ -195,7 +206,7 @@ export function CalendarPage() {
         </div>
       </div>
 
-      <Card className={styles.card}>
+      <Card className={styles.card} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} data-testid="calendar-card">
         {p.tasks.length === 0 ? (
           <EmptyState title="ยังไม่มีงานให้แสดง" description="เพิ่มงานใน Gantt ก่อน แล้วปฏิทินจะแสดงงานตามวัน" />
         ) : view === 'month' ? (

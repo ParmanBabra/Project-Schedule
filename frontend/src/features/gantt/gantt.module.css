@@ -182,21 +182,29 @@
 @media (max-width: 767px) {
   .toolbar { padding: 0; gap: var(--sp-2); }
   .todayLabel { display: none; }
+  .todayBtn { display: none; }
+  .cpToggle label > span:last-child { font-size: var(--fs-label); }
+  .undoGroup { margin-left: auto; }
   .chips { width: 100%; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
   .chips::-webkit-scrollbar { display: none; }
-  .addBtn {
+  .addBtn { display: none; } /* the bottom nav carries the + button on mobile */
+  .todayFab {
     position: fixed;
     right: var(--sp-4);
-    bottom: calc(var(--sp-4) + env(safe-area-inset-bottom));
-    width: 56px;
-    height: 56px;
-    padding: 0;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    height: 36px;
+    padding: 0 14px;
     border-radius: var(--r-pill);
-    z-index: 20;
-    justify-content: center;
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--sh-float);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--fs-label);
+    font-weight: var(--fw-medium);
+    z-index: 30;
   }
-  .addBtn span { display: none; }
-  .addBtn svg { width: 24px; height: 24px; }
   .card { min-height: 360px; }
   .nameRow { padding-left: var(--sp-3); gap: 4px; }
   .nameRow .wbs { display: none; }
