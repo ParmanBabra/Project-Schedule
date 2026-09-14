@@ -437,3 +437,27 @@ GET    /api/settings/defaults          # default ทั้งหมดพร้�
 - เขียนไฟล์แบบ atomic (เขียน temp แล้ว rename) และ lock ต่อไฟล์ระหว่างเขียน
 - ทุกการแก้ไขตอบกลับด้วย schedule ใหม่ทั้งชุด frontend ไม่คำนวณ CPM เอง (ยกเว้น preview ระหว่างลาก ซึ่งเรียก preview endpoint แบบ debounce)
 - รองรับหน้าจอกว้างตั้งแต่ 1024px ขึ้นไป ต่ำกว่านั้นซ่อนคอลัมน์ชื่องานและใช้ drawer
+
+## 6. รายละเอียด API ที่สรุปตอนพัฒนา (Phase 1)
+
+สิ่งที่ตัดสินใจเพิ่มระหว่างเขียนโค้ด ถ้าขัดกับหัวข้อก่อนหน้า ให้ยึดหัวข้อนี้
+
+- **ทุก mutation ตอบกลับ `ProjectOut`** คือโปรเจกต์ทั้งก้อน (tasks, dependencies, assignments, rules, buffer) บวก `schedule` ที่คำนวณใหม่ ยกเว้น `DELETE /projects/{id}` ตอบ 204
+- **รูปแบบ error** ทุกกรณีเป็น `{ "error": { "code", "message", "details" } }` code ที่ใช้: `not_found` (404), `validation_failed` (422), `cycle_detected` (422, `details.path` คือรายชื่องานที่วนกลับมาตัวแรก), `conflict` (409)
+- **การแก้ไขที่ทำให้กราฟไม่ถูกต้อง** (cycle, dependency ในสาย WBS เดียวกัน, parent ที่ไม่มี) จะถูกปฏิเสธและไม่บันทึกอะไรเลย
+- **ตำแหน่ง milestone** = วันสิ้นสุดของงานก่อนหน้า (เช่น งานจบ 6 ต.ค. milestone แสดง 6 ต.ค.) ถ้าไม่มีงานก่อนหน้า = วันเริ่มโปรเจกต์
+- **Task fields เพิ่มเติม** `collapsed` (สถานะยุบใน UI), `estimate: { o, m, p }` สำหรับ PERT
+- **Tasks endpoints**
+  - `POST /tasks` body เพิ่ม `afterId` แทรกหลัง sibling ที่ระบุ ค่าเริ่มต้นต่อท้าย
+  - `PATCH /tasks/{id}` มี `clearConstraint`, `clearEstimate` สำหรับล้างค่า; ตั้ง `isMilestone: true` จะบังคับ duration = 0
+  - `DELETE /tasks/{id}?mode=lift|cascade` (ค่าเริ่มต้น lift = ยกลูกขึ้นชั้นบน) ลบ dependency และ assignment ที่เกี่ยวข้องให้
+  - `PATCH /tasks/reorder` body `{ parentId, ids }` ต้องส่ง sibling ครบทุกตัว
+  - `POST /tasks/group` body `{ name, taskIds }` งานที่เลือกต้องมี parent เดียวกัน กลุ่มใหม่วางที่ตำแหน่งของงานแรกที่เลือก
+  - `PATCH /tasks/{id}/move` body `{ parentId, order }` order เป็นตำแหน่ง 1-based ในกลุ่มใหม่
+- **Dependencies** `POST` ไม่ส่ง `type`/`lag` จะใช้ `rules.defaultDependency`
+- **Preview** `POST /schedule/preview` body เป็นบางส่วนของโปรเจกต์ (`tasks`, `dependencies`, `rules`, `buffer`, `holidays`, `workingDays`, `startDate`) แทนที่ทั้งรายการ หรือ `patchTasks` แทนที่เฉพาะงานที่ id ตรง เหมาะกับตอนลาก
+- **Settings** `GET /settings/defaults` คืน `rules`, `buffer` ค่าเริ่มต้น และ `bufferMethods`, `ruleDescriptions`, `managementReserve` ที่มีข้อความภาษาไทยสำหรับหน้าตั้งค่า (ข้อ 3.13 และ 3.14) UI ต้องใช้ข้อความจากที่นี่ ไม่ hardcode ซ้ำ
+- **Schedule ต่อ task** มี `wbs`, `depth`, `isSummary`, `isMilestone`, `es/ef/ls/lf` (index วันทำงาน), `start/end` และ late dates, `totalFloat`, `freeFloat`, `isCritical`, `isNearCritical`, `progress` (rollup แล้ว)
+- **Schedule summary** มี `plannedEnd`, `committedEnd` (= plannedEnd + buffer), `chainDays`, `criticalCount`, `nearCriticalCount`, `taskCount` (นับเฉพาะ leaf), `progress`
+- **Buffer** `days` ถูกปัดขึ้น ขั้นต่ำ 1 วันเมื่อ chain > 5 วัน; pert ที่ยังไม่มีค่า 3 จุดบางงานจะคืน `note` บอกจำนวนงานที่ขาด; `consumedPercent` และ `status` ยังเป็น null จนกว่าจะมี baseline (Phase 5)
+- **การเก็บไฟล์** เขียนแบบ atomic พร้อม backup 20 ชุดล่าสุดที่ `data/backups/<id>/` ลบโปรเจกต์ย้ายไป `data/trash/` ส่วน `index.json` สร้างใหม่อัตโนมัติถ้าหาย

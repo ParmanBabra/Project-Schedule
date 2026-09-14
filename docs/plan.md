@@ -68,6 +68,8 @@ Design review เป็นส่วนหนึ่งของงาน ไม�
 
 จุดเสี่ยง: 1.5 เป็นงานที่ประเมินยากที่สุด ถ้าเกิน 3 วันให้ตัด near-critical และ constraint ไปทำหลัง M2
 
+**ผล: เสร็จ 15 ก.ย. 2569 (M1 ก่อนกำหนด 29 ก.ย.)** ครบทุกข้อ 1.1 ถึง 1.7 รวม near-critical, constraint, summary rollup, buffer 3 วิธี ทดสอบ 66 รายการผ่าน (engine 31, calendar 7, storage 5, API 23) และ performance 500 งานต่ำกว่า 100 ms ข้อที่เบี่ยงจากเอกสารบันทึกไว้ใน features.md ส่วน 6
+
 ### Phase 2 – Frontend core (13 วท. · 30 ก.ย. – 19 ต.ค.)
 
 | # | งาน | วท. | ผลลัพธ์ |
