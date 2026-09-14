@@ -31,6 +31,7 @@ export const screens: Screen[] = [
     mockup: { desktop: 'Layout3', mobile: 'MobileTaskSheet' },
     setup: async (page) => { await page.getByRole('button', { name: /^ออกแบบระบบ/ }).first().click() },
   },
+  { name: 'gantt-export', path: gantt, viewports: ['desktop'], setup: async (page) => { await page.getByRole('button', { name: 'ส่งออก' }).click() } },
   { name: 'gantt-task-list', path: gantt, setup: async (page) => { await page.getByRole('button', { name: 'รายการงาน' }).click() } },
   {
     name: 'gantt-dragging',

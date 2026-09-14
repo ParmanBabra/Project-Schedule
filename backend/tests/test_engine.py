@@ -369,3 +369,24 @@ def test_health_baseline_mode_uses_frozen_dates():
     p.tasks[1].duration = 8  # ออกแบบระบบ now runs to 28 Sep, but baseline says 23 Sep
     s = compute_schedule(p, today=D(2026, 9, 24))
     assert s.tasks["t2"].expected_progress == 100 and s.tasks["t2"].health == "late"
+
+
+# ------------------------------------------------------------------- BUF-7
+
+
+def test_padding_warning_when_most_started_tasks_run_far_ahead():
+    from datetime import date as _date
+
+    # 4 parallel 10-day tasks starting 14 ก.ย.; on day 3 (16 ก.ย.) linear expectation is 30%
+    tasks = [task(f"t{i}", 10, progress=p, order=i) for i, p in enumerate([90, 80, 100, 20])]
+    p = project(tasks=tasks, deps=[])
+    sch = compute_schedule(p, today=_date(2026, 9, 16))
+    assert sch.buffer.padding_warning is True
+    assert "เผื่อซ้ำซ้อน" in (sch.buffer.padding_note or "")
+    # percent method never warns; neither does a plan where progress tracks the calendar
+    p.buffer.method = "percent"
+    assert compute_schedule(p, today=_date(2026, 9, 16)).buffer.padding_warning is False
+    p.buffer.method = "ccpm"
+    for t, prog in zip(p.tasks, [30, 35, 25, 20], strict=True):
+        t.progress = prog
+    assert compute_schedule(p, today=_date(2026, 9, 16)).buffer.padding_warning is False

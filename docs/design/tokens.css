@@ -13,7 +13,7 @@
   /* ข้อความ */
   --text: #2f2a4a;
   --text-2: #6f6893;
-  --text-3: #8a83a8;
+  --text-3: #716a91; /* 5.0:1 บนขาว, 4.65:1 บน surface-2 (WCAG AA) */
   --text-4: #b7b1d6;
   --text-on-primary: #ffffff;
 

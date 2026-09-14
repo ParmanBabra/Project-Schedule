@@ -457,6 +457,23 @@ def compute_schedule(project: Project, today: date | None = None) -> Schedule:
                 out[nid].health = "not_started"
 
     buffer = compute_buffer(project, nodes, cal, project_end, critical_path)
+    if project.buffer.method == "ccpm":
+        started = [
+            nid
+            for nid in leaves_all
+            if nodes[nid].task.progress > 0
+            and not out[nid].is_milestone
+            and nodes[nid].dur > 0
+            and today >= out[nid].start  # progress logged before the start date is not evidence
+        ]
+        ahead = [nid for nid in started if _is_ahead(out[nid], nodes[nid].task.progress, today)]
+        if len(started) >= PADDING_MIN_STARTED and len(ahead) * 100 > len(started) * PADDING_RATIO:
+            buffer.padding_warning = True
+            buffer.padding_note = (
+                f"งานที่เริ่มแล้ว {len(ahead)} จาก {len(started)} งาน คืบหน้าเร็วกว่าแผนมาก "
+                "ค่าประเมินอาจมีเผื่อในตัวอยู่แล้ว การใช้ Critical Chain จะเผื่อซ้ำซ้อน "
+                "ลองเปลี่ยนวิธีสำรองเวลาเป็น 'บวกเพิ่มตามความเสี่ยง' หรือลดค่าประเมินลง"
+            )
     planned_end = cal.day(project_end - 1) if project_end > 0 else (cal.start if nodes else None)
     if not nodes:
         planned_end = None
@@ -488,6 +505,17 @@ def compute_schedule(project: Project, today: date | None = None) -> Schedule:
         baseline_planned_end=project.baseline.planned_end if project.baseline else None,
     )
     return Schedule(tasks=out, critical_path=critical_path, summary=summary, buffer=buffer)
+
+
+PADDING_MIN_STARTED = 3  # BUF-7 needs a few data points before it speaks up
+PADDING_RATIO = 30  # % of started tasks that must be well ahead of plan
+
+
+def _is_ahead(s: TaskSchedule, progress: int, today: date) -> bool:
+    """Well ahead = 30+ points past the linear expectation, or finished before its planned end."""
+    if progress >= 100:
+        return today < s.end
+    return progress - s.expected_progress > PADDING_RATIO
 
 
 def task_health(

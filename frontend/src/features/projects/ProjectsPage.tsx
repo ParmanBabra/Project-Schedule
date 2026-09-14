@@ -17,6 +17,7 @@ import {
   Skeleton,
   useToast,
 } from '@/shared/ui'
+import { ImportButton } from '@/features/io/ImportButton'
 import { useDeleteProject, useDuplicateProject, useProjects } from './api'
 import { CreateProjectDialog } from './CreateProjectDialog'
 import styles from './ProjectsPage.module.css'
@@ -68,6 +69,7 @@ export function ProjectsPage() {
           />
         </div>
         <span className={styles.spacer} />
+        <ImportButton />
         <Button variant="primary" icon={<Plus size={16} />} onClick={() => setCreating(true)}>
           โปรเจกต์ใหม่
         </Button>

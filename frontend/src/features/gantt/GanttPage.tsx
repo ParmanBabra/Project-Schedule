@@ -13,6 +13,7 @@ import { TaskPanel } from '@/features/tasks/TaskPanel'
 import { ApiError } from '@/shared/api/client'
 import { formatThai, todayISO } from '@/shared/lib/date'
 import { Button, Card, Chip, EmptyState, IconButton, Segment, Skeleton, Toggle, useToast } from '@/shared/ui'
+import { ExportMenu } from '@/features/io/ExportMenu'
 import { AddTaskDialog } from './AddTaskDialog'
 import { DependencyPopover } from './DependencyPopover'
 import { GanttChart, type DragPatch } from './GanttChart'
@@ -312,9 +313,15 @@ export function GanttPage() {
               <Chip tone="soft" data-testid="chip-dates">
                 เสร็จตามแผน {formatThai(s.plannedEnd)} · สัญญาส่ง {formatThai(s.committedEnd)}
               </Chip>
+              {b.paddingWarning && (
+                <Chip tone="warn" data-testid="chip-padding" title={b.paddingNote ?? undefined}>
+                  เผื่ออาจซ้ำซ้อน
+                </Chip>
+              )}
             </>
           )}
         </div>
+        <ExportMenu projectId={p.id} projectName={p.name} compact={isMobile} pngTarget={() => document.querySelector<HTMLElement>('[data-testid="gantt-chart"]')} />
         <Button variant="primary" size="sm" icon={<Plus size={16} />} onClick={() => setAdding(true)} className={styles.addBtn} aria-label="เพิ่มงาน" title="คีย์ N">
           <span>เพิ่มงาน</span>
         </Button>

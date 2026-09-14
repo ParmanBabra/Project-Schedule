@@ -368,6 +368,11 @@ function BufferCard({ info, project, active, onChoose, onPatch }: { info: Buffer
       <h3>{info.title}</h3>
       <p>{info.what}</p>
       <div className={styles.fit}>เหมาะเมื่อ {info.fit}</div>
+      {active && info.id === 'ccpm' && project.schedule.buffer.paddingWarning && (
+        <div className={styles.paddingWarn} role="note" data-testid="padding-warning">
+          ⚠ {project.schedule.buffer.paddingNote}
+        </div>
+      )}
       {active && info.id === 'ccpm' && (
         <div className={styles.slider} onClick={(e) => e.stopPropagation()}>
           <span>สัดส่วนเผื่อ</span>

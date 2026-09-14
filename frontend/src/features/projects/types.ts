@@ -115,6 +115,8 @@ export interface BufferResult {
   status: 'green' | 'yellow' | 'red' | null
   chainProgress: number
   consumedDays: number | null
+  paddingWarning: boolean
+  paddingNote: string | null
 }
 
 export interface ScheduleSummary {

@@ -67,3 +67,5 @@
   .rl { width: auto; }
   .row2 { grid-template-columns: 1fr; }
 }
+
+.paddingWarn { margin-top: var(--sp-2); padding: 10px 12px; border-radius: 12px; background: var(--warn-bg); color: var(--warn-text); font-size: var(--fs-label); line-height: 1.45; }

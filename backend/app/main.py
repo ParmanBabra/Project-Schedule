@@ -14,6 +14,7 @@ from app.core.config import APP_TITLE, APP_VERSION, data_dir
 from app.core.errors import install_error_handlers
 from app.features.assignments.router import router as assignments_router
 from app.features.dependencies.router import router as dependencies_router
+from app.features.io.router import router as io_router
 from app.features.projects.baseline import router as baseline_router
 from app.features.projects.router import router as projects_router
 from app.features.resources.router import router as resources_router
@@ -38,6 +39,7 @@ def create_app() -> FastAPI:
         return {"status": "ok", "version": APP_VERSION, "dataDir": str(data_dir())}
 
     for r in (
+        io_router,  # first: /projects/import must not be captured by /{project_id}
         projects_router,
         baseline_router,
         tasks_router,

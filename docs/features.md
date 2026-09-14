@@ -513,3 +513,12 @@ GET    /api/settings/defaults          # default ทั้งหมดพร้�
 - **ปฏิทินมือถือ** ปัดในการ์ดรายการวัน ระยะเกิน 60px = เปลี่ยนสัปดาห์ (ซ้าย = ถัดไป) ใช้ touch events จึงไม่รบกวนการลากด้วยเมาส์บนเดสก์ท็อป
 - **การทดสอบมือถือ** e2e project `mobile` (Pixel 7) จำลองการปัดด้วย CDP `Input.dispatchTouchEvent` เพราะ `dispatchEvent('touchstart')` ต้องการ Touch object เต็มรูปแบบ
 
+## 12. รายละเอียดที่สรุปตอนพัฒนา (Phase 7 – นำเข้า/ส่งออก, BUF-7, QA)
+
+- **ไฟล์โปรเจกต์** `GET /api/projects/{id}/export` → `{format:"phaengan-project", version:1, exportedAt, project:{…ProjectState + baseline}, resources:[เฉพาะที่ถูกมอบหมาย]}` ส่งหัว Content-Disposition ให้เบราว์เซอร์ดาวน์โหลดเป็น `<ชื่อโปรเจกต์>.phaengan.json` ไม่มี id/timestamps/schedule ของโปรเจกต์ในไฟล์
+- **นำเข้า** `POST /api/projects/import` รับเอกสารเดียวกัน (+ `name` เพื่อตั้งชื่อใหม่) ตรวจ `format` และความครบของกราฟ (งานซ้ำ, ความสัมพันธ์/กลุ่ม/การมอบหมายที่อ้างงานที่ไม่มี) ก่อน จากนั้นจับคู่ทรัพยากรด้วยชื่อแบบ normalize (ตัดช่องว่างซ้ำ + casefold) ที่ไม่พบสร้างใหม่โดยใช้ type/กำลัง/สี/วันลาจากไฟล์ แล้วสร้างโปรเจกต์ id ใหม่ (คง id งาน/ความสัมพันธ์เดิม) ผ่าน engine เหมือน mutation อื่น จึงจับ cycle ได้ ผลลัพธ์ `{project, result:{projectId, createdResources, matchedResources}}` ฝั่ง UI ตรวจ `format` ก่อนส่งและแสดง toast สรุปการจับคู่
+- **CSV** `GET /api/projects/{id}/export.csv` เรียงตาม WBS คอลัมน์: WBS ชื่องาน ประเภท ระยะเวลา เริ่ม สิ้นสุด เริ่มช้าสุด เสร็จช้าสุด Total float Free float Critical ความคืบหน้า สถานะ ผู้ทำ งานก่อนหน้า ปิดท้ายด้วยแถวสำรองเวลาโครงการ ขึ้นต้นด้วย BOM เพื่อให้ Excel อ่านภาษาไทยได้
+- **PNG** ทำในเบราว์เซอร์ด้วย html-to-image บนกล่อง `[data-testid=gantt-chart]` (pixelRatio 2, ข้าม web font ที่ข้ามโดเมน) ได้ภาพช่วงที่เลื่อนอยู่พร้อมคอลัมน์ชื่อ ไม่ต้องพึ่งเซิร์ฟเวอร์
+- **BUF-7** engine ตั้ง `buffer.paddingWarning`/`paddingNote` เมื่อใช้ ccpm และงานที่ "เริ่มแล้วจริง" (progress > 0, ถึงวันเริ่มแล้ว, ไม่ใช่ milestone) มีอย่างน้อย 3 งาน และเกิน 30% ของงานเหล่านั้นคืบหน้าเกินค่าคาดแบบ linear มากกว่า 30 จุดหรือเสร็จก่อนวันสิ้นสุด แสดงเป็นชิปเตือนบน Gantt (hover อ่านคำอธิบาย) และกล่องคำอธิบายใต้การ์ด Critical Chain ในหน้าตั้งค่า
+- **QA** สีข้อความรอง `--text-3` เปลี่ยนเป็น #716a91 เพื่อผ่าน WCAG AA (ตรวจอัตราส่วนคู่สีหลักทั้งหมดด้วยสคริปต์: text-2 5.15, primary 5.64, warn 4.25 บนพื้นเตือน, critical 4.91) คีย์บอร์ดมี e2e ครอบ N / Esc / Tab focus ring / Enter บนแถบ / Ctrl+Z · โปรเจกต์ 60 งานผ่าน `PUT /projects/{id}` ใช้เป็นชุดทดสอบใหญ่ใน e2e
+
