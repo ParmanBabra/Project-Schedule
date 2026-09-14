@@ -1,0 +1,19 @@
+.table { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
+.table th { position: sticky; top: 0; background: var(--surface-2); font-size: var(--fs-label); font-weight: var(--fw-medium); color: var(--text-3); text-align: left; padding: 10px var(--sp-3); z-index: 1; }
+.table td { padding: 6px var(--sp-3); border-bottom: 1px solid var(--border-soft); height: var(--h-row); }
+.row { cursor: pointer; }
+.row:hover td { background: var(--surface-2); }
+.rowSel td { background: var(--primary-light) !important; }
+.rowSummary .name { font-weight: var(--fw-medium); }
+.wbs { width: 56px; color: var(--text-4); font-size: var(--fs-caption); font-variant-numeric: tabular-nums; }
+.num { width: 64px; text-align: right; font-variant-numeric: tabular-nums; }
+.date { width: 84px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.crit { color: var(--critical-text); font-weight: var(--fw-semibold); }
+.name { display: inline-flex; align-items: center; gap: 8px; }
+.dot { width: 10px; height: 10px; flex-shrink: 0; display: inline-block; }
+.actions { width: 150px; white-space: nowrap; }
+.actions button { width: 30px; height: 30px; margin-right: 2px; }
+.empty { padding: var(--sp-6); text-align: center; color: var(--text-3); }
+@media (max-width: 767px) {
+  .date, .table th:nth-child(4), .table th:nth-child(5) { display: none; }
+}

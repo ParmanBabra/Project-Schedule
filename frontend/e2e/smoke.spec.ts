@@ -6,6 +6,6 @@ test('หน้าแรกเปิดได้และ backend ตอบ', as
   expect((await health.json()).status).toBe('ok')
 
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: 'แผนงาน' })).toBeVisible()
-  await expect(page.getByTestId('backend-status')).toHaveText(/พร้อม/)
+  await expect(page.getByRole('heading', { name: 'โปรเจกต์' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'โปรเจกต์ใหม่' })).toBeVisible()
 })

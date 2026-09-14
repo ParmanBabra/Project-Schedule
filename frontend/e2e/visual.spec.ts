@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { screens, settle } from '../shots/screens'
+import { resolvePath, screens, settle } from '../shots/screens'
 
 /**
  * Visual regression: every registered screen must match its approved baseline.
@@ -7,13 +7,10 @@ import { screens, settle } from '../shots/screens'
  * Approve intentional changes with: npm run visual:approve   (after a design review)
  */
 for (const screen of screens) {
-  test(`visual: ${screen.name}`, async ({ page }, testInfo) => {
+  test(`visual: ${screen.name}`, async ({ page, request }, testInfo) => {
     const viewport = testInfo.project.name as 'desktop' | 'mobile'
-    test.skip(
-      screen.viewports !== undefined && !screen.viewports.includes(viewport),
-      `${screen.name} not defined for ${viewport}`,
-    )
-    await page.goto(screen.path)
+    test.skip(screen.viewports !== undefined && !screen.viewports.includes(viewport), `${screen.name} not defined for ${viewport}`)
+    await page.goto(await resolvePath(screen, request))
     await settle(page)
     if (screen.setup) {
       await screen.setup(page)
@@ -23,6 +20,7 @@ for (const screen of screens) {
       fullPage: true,
       maxDiffPixelRatio: 0.002,
       animations: 'disabled',
+      mask: [page.getByTestId('today-line')],
     })
   })
 }

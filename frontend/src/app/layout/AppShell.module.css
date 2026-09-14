@@ -1,0 +1,74 @@
+.shell {
+  min-height: 100vh;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+  padding: var(--page-pad);
+  padding-block: var(--page-pad);
+  background: var(--bg);
+}
+
+.hbar {
+  height: var(--h-header);
+  background: var(--primary);
+  border-radius: var(--r-card);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 0 var(--sp-5);
+  color: var(--text-on-primary);
+  flex-shrink: 0;
+}
+
+.brand { display: flex; align-items: center; gap: var(--sp-3); color: inherit; text-decoration: none; }
+.brand:hover { color: inherit; }
+.mark { width: 30px; height: 30px; border-radius: 10px; background: var(--milestone); flex-shrink: 0; }
+.brandName { font-weight: var(--fw-semibold); font-size: 17px; }
+
+.switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 36px;
+  padding: 0 var(--sp-4);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--text-on-primary);
+  font-weight: var(--fw-medium);
+  max-width: 320px;
+}
+.switcher:hover { background: rgba(255, 255, 255, 0.22); }
+.switcherName { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.tabs { display: flex; gap: 4px; margin-left: var(--sp-3); }
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 38px;
+  padding: 0 var(--sp-4);
+  border-radius: var(--r-pill);
+  color: var(--primary-tint);
+  text-decoration: none;
+  transition: background var(--t-base) var(--ease), color var(--t-base) var(--ease);
+}
+.tab:hover { color: var(--text-on-primary); background: rgba(255, 255, 255, 0.1); }
+.tabOn, .tabOn:hover { background: var(--surface); color: var(--primary-dark); font-weight: var(--fw-medium); }
+
+.main { flex: 1; display: flex; flex-direction: column; min-height: 0; gap: var(--gap-sm); }
+.mobileMenu { display: none; margin-left: auto; }
+
+@media (max-width: 1023px) {
+  .tabLabel { display: none; }
+  .tab { padding: 0 var(--sp-3); }
+}
+@media (max-width: 767px) {
+  .shell { padding: var(--page-pad); }
+  .hbar { height: var(--h-header); padding: 0 var(--sp-3) 0 var(--sp-4); gap: var(--sp-2); border-radius: 16px; }
+  .brandName { display: none; }
+  .mark { width: 26px; height: 26px; border-radius: 8px; }
+  .tabs { display: none; }
+  .mobileMenu { display: flex; }
+  .switcher { min-width: 0; flex: 1; max-width: none; }
+}

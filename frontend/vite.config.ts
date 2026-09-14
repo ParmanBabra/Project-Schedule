@@ -13,7 +13,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      // API_TARGET lets Playwright point an isolated frontend at its own backend (see playwright.config.ts)
+      '/api': { target: process.env.API_TARGET ?? 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
   test: {

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import { AppRoutes } from '@/app/routes'
+import { ToastProvider } from '@/shared/ui'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -11,9 +12,11 @@ const queryClient = new QueryClient({
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </ToastProvider>
     </QueryClientProvider>
   )
 }

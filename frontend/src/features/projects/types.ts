@@ -1,0 +1,200 @@
+/** Types mirroring the backend models (backend/app/core/models.py + scheduling/schemas.py). */
+
+export type DependencyType = 'FS' | 'SS' | 'FF' | 'SF'
+export type BufferMethod = 'ccpm' | 'percent' | 'pert'
+export type RiskLevel = 'low' | 'medium' | 'high'
+
+export interface Constraint {
+  type: 'SNET'
+  date: string
+}
+
+export interface Estimate {
+  o: number
+  m: number
+  p: number
+}
+
+export interface Task {
+  id: string
+  name: string
+  duration: number
+  progress: number
+  isMilestone: boolean
+  constraint: Constraint | null
+  color: string | null
+  parentId: string | null
+  collapsed: boolean
+  order: number
+  estimate: Estimate | null
+}
+
+export interface Dependency {
+  id: string
+  from: string
+  to: string
+  type: DependencyType
+  lag: number
+}
+
+export interface Assignment {
+  id: string
+  taskId: string
+  resourceId: string
+  units: number
+}
+
+export interface BufferSettings {
+  method: BufferMethod
+  ccpmRatio: number
+  riskLevel: RiskLevel
+  percent: number | null
+  pertConfidence: 84 | 98
+  days: number | null
+  managementReservePercent: number
+}
+
+export interface Rules {
+  nearCriticalFloatDays: number
+  progressRollup: 'duration' | 'count' | 'effort'
+  lateDetection: 'linear' | 'baseline' | 'overdue'
+  overallocationThreshold: number
+  lagUnit: 'working' | 'calendar'
+  defaultDependency: { type: DependencyType; lag: number }
+  schedulingMode: 'auto' | 'manual'
+}
+
+export interface TaskSchedule {
+  id: string
+  wbs: string
+  isSummary: boolean
+  isMilestone: boolean
+  duration: number
+  start: string
+  end: string
+  earlyStart: string
+  earlyFinish: string
+  lateStart: string
+  lateFinish: string
+  es: number
+  ef: number
+  ls: number
+  lf: number
+  totalFloat: number
+  freeFloat: number
+  isCritical: boolean
+  isNearCritical: boolean
+  progress: number
+  depth: number
+}
+
+export interface BufferResult {
+  method: BufferMethod
+  chainDays: number
+  days: number
+  end: string | null
+  managementReserveDays: number
+  managementReserveEnd: string | null
+  percentUsed: number | null
+  note: string | null
+  consumedPercent: number | null
+  status: string | null
+}
+
+export interface ScheduleSummary {
+  taskCount: number
+  criticalCount: number
+  nearCriticalCount: number
+  progress: number
+  chainDays: number
+  plannedEnd: string | null
+  committedEnd: string | null
+}
+
+export interface Schedule {
+  tasks: Record<string, TaskSchedule>
+  criticalPath: string[]
+  summary: ScheduleSummary
+  buffer: BufferResult
+}
+
+export interface Project {
+  id: string
+  name: string
+  startDate: string
+  holidays: string[]
+  workingDays: number[]
+  tasks: Task[]
+  dependencies: Dependency[]
+  assignments: Assignment[]
+  buffer: BufferSettings
+  rules: Rules
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ProjectOut extends Project {
+  schedule: Schedule
+}
+
+export interface ProjectListItem {
+  id: string
+  name: string
+  startDate: string
+  plannedEnd: string | null
+  committedEnd: string | null
+  progress: number
+  taskCount: number
+  criticalCount: number
+  updatedAt: string
+}
+
+export interface ProjectCreate {
+  name: string
+  startDate: string
+  workingDays?: number[]
+  holidays?: string[]
+}
+
+export interface ProjectUpdate {
+  name?: string
+  startDate?: string
+  workingDays?: number[]
+  holidays?: string[]
+}
+
+export interface TaskCreate {
+  name: string
+  duration?: number
+  progress?: number
+  isMilestone?: boolean
+  parentId?: string | null
+  constraint?: Constraint | null
+  color?: string | null
+  estimate?: Estimate | null
+  afterId?: string | null
+}
+
+export interface TaskUpdate {
+  name?: string
+  duration?: number
+  progress?: number
+  isMilestone?: boolean
+  constraint?: Constraint | null
+  clearConstraint?: boolean
+  color?: string | null
+  collapsed?: boolean
+  estimate?: Estimate | null
+  clearEstimate?: boolean
+}
+
+export interface DependencyCreate {
+  from: string
+  to: string
+  type?: DependencyType
+  lag?: number
+}
+
+export interface ApiErrorBody {
+  error: { code: string; message: string; details?: unknown }
+}

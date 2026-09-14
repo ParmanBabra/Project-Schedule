@@ -1,0 +1,17 @@
+.overlay { position: fixed; inset: 0; background: rgba(47, 42, 74, 0.3); z-index: 45; display: flex; }
+.drawer {
+  max-width: 100%;
+  height: 100%;
+  background: var(--surface);
+  box-shadow: var(--sh-float);
+  display: flex;
+  flex-direction: column;
+  border-radius: 0 var(--r-card) var(--r-card) 0;
+}
+.head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--border); }
+.headActions { display: flex; align-items: center; gap: var(--sp-2); }
+.title { margin: 0; font-size: var(--fs-h2); font-weight: var(--fw-semibold); }
+.body { flex: 1; overflow: auto; }
+@media (max-width: 767px) {
+  .drawer { width: 100% !important; border-radius: 0; }
+}

@@ -16,29 +16,46 @@ import os
 import shutil
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
+
+
+def _retry_windows(fn: Callable[[], Any], attempts: int = 30, delay: float = 0.01) -> Any:
+    """Windows briefly denies access to files that were just written (indexer/AV scans),
+    so rename/copy right after a write can raise PermissionError. Retry with backoff."""
+    for attempt in range(attempts):
+        try:
+            return fn()
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(delay * (1 + attempt % 5))
+    return None
+
+
+# Process-wide lock registry. A JsonStore is cheap and created per request, so the
+# locks must NOT live on the instance or two requests would never contend.
+_LOCKS: dict[str, threading.RLock] = {}
+_LOCKS_GUARD = threading.Lock()
+_STAMP_GUARD = threading.Lock()
+_LAST_STAMP = [""]
 
 
 class JsonStore:
     def __init__(self, root: Path) -> None:
         self.root = root
         self.root.mkdir(parents=True, exist_ok=True)
-        self._locks: dict[str, threading.RLock] = {}
-        self._locks_guard = threading.Lock()
-        self._stamp_guard = threading.Lock()
-        self._last_stamp = ""
 
     # ------------------------------------------------------------------ locking
     def lock_for(self, path: Path) -> threading.RLock:
         key = str(path.resolve())
-        with self._locks_guard:
-            lock = self._locks.get(key)
+        with _LOCKS_GUARD:
+            lock = _LOCKS.get(key)
             if lock is None:
                 lock = threading.RLock()
-                self._locks[key] = lock
+                _LOCKS[key] = lock
             return lock
 
     @contextmanager
@@ -70,12 +87,12 @@ class JsonStore:
             path.parent.mkdir(parents=True, exist_ok=True)
             if backup_dir is not None and path.exists():
                 self._backup(path, backup_dir, keep)
-            tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+            tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
             with tmp.open("w", encoding="utf-8") as fh:
                 json.dump(data, fh, ensure_ascii=False, indent=2)
                 fh.flush()
                 os.fsync(fh.fileno())
-            os.replace(tmp, path)
+            _retry_windows(lambda: os.replace(tmp, path))
 
     def move_to_trash(self, path: Path, trash_dir: Path) -> Path | None:
         with self.locked(path):
@@ -83,24 +100,25 @@ class JsonStore:
                 return None
             trash_dir.mkdir(parents=True, exist_ok=True)
             target = trash_dir / f"{path.stem}-{self._stamp()}{path.suffix}"
-            shutil.move(str(path), str(target))
+            _retry_windows(lambda: shutil.move(str(path), str(target)))
             return target
 
     # ---------------------------------------------------------------- backups
     def _backup(self, path: Path, backup_dir: Path, keep: int) -> None:
         backup_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(path, backup_dir / f"{self._stamp()}.json")
+        dest = backup_dir / f"{self._stamp()}.json"
+        _retry_windows(lambda: shutil.copy2(path, dest))
         backups = sorted(backup_dir.glob("*.json"))
         for old in backups[:-keep] if keep > 0 else backups:
             old.unlink(missing_ok=True)
 
     def _stamp(self) -> str:
         """Monotonic, filesystem-safe timestamp (never repeats within a process)."""
-        with self._stamp_guard:
+        with _STAMP_GUARD:
             stamp = (
                 time.strftime("%Y%m%dT%H%M%S") + f"{int(time.time() * 1_000_000) % 1_000_000:06d}"
             )
-            if stamp <= self._last_stamp:
-                stamp = f"{self._last_stamp[:-6]}{int(self._last_stamp[-6:]) + 1:06d}"
-            self._last_stamp = stamp
+            if stamp <= _LAST_STAMP[0]:
+                stamp = f"{_LAST_STAMP[0][:-6]}{int(_LAST_STAMP[0][-6:]) + 1:06d}"
+            _LAST_STAMP[0] = stamp
             return stamp

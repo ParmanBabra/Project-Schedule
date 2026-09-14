@@ -49,9 +49,12 @@ class ProjectRepository:
         self.store.write_json(self.index_path, payload)
 
     def _upsert_index(self, project: Project) -> None:
-        entries = [e for e in self.list_index() if e.id != project.id]
-        entries.append(IndexEntry(id=project.id, name=project.name, updated_at=project.updated_at))
-        self._write_index(entries)
+        with self.store.locked(self.index_path):  # read-modify-write as one unit
+            entries = [e for e in self.list_index() if e.id != project.id]
+            entries.append(
+                IndexEntry(id=project.id, name=project.name, updated_at=project.updated_at)
+            )
+            self._write_index(entries)
 
     # ------------------------------------------------------------- crud
     def exists(self, project_id: str) -> bool:
@@ -81,7 +84,8 @@ class ProjectRepository:
         if not self.exists(project_id):
             raise NotFound(f"project {project_id} not found")
         self.store.move_to_trash(self.path_for(project_id), self.trash_dir)
-        self._write_index([e for e in self.list_index() if e.id != project_id])
+        with self.store.locked(self.index_path):
+            self._write_index([e for e in self.list_index() if e.id != project_id])
 
 
 def get_repo() -> ProjectRepository:
