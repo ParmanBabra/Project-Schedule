@@ -1,0 +1,136 @@
+/* แผนงาน – Design tokens (สไตล์ D: สดใส เป็นมิตร)
+   ย้ายไฟล์นี้ไปที่ frontend/src/shared/styles/tokens.css ตอนตั้งโปรเจกต์ */
+
+:root {
+  /* สีพื้น */
+  --bg: #f2f0fa;
+  --surface: #ffffff;
+  --surface-2: #f7f5fc;
+  --surface-3: #f2f0fa;
+  --border: #ece9f6;
+  --border-soft: #f1eff8;
+
+  /* ข้อความ */
+  --text: #2f2a4a;
+  --text-2: #6f6893;
+  --text-3: #8a83a8;
+  --text-4: #b7b1d6;
+  --text-on-primary: #ffffff;
+
+  /* สีหลัก */
+  --primary: #6a4fd8;
+  --primary-dark: #4e37b0;
+  --primary-light: #e6e1fb;
+  --primary-tint: #d9d2f7;
+  --ink: #2f2a4a;
+
+  /* ความหมายเฉพาะ */
+  --critical: #e0457b;
+  --critical-text: #b8285a;
+  --critical-bg: #ffe0ec;
+  --task: #8fd3c7;
+  --task-text: #1f4d45;
+  --milestone: #ffd166;
+  --warn-bg: #fff3d6;
+  --warn-text: #9a6b00;
+  --warn-icon: #c98a00;
+  --link: #b7b1d6;
+  --success: #1f9e89;
+
+  /* สีทรัพยากร (วนใช้) */
+  --res-1: #6a4fd8;
+  --res-2: #e0457b;
+  --res-3: #1f9e89;
+  --res-4: #f28c28;
+  --res-5: #2e86de;
+  --res-6: #a1519c;
+  --res-7: #8a83a8;
+
+  /* ตัวอักษร */
+  --font: "Kanit", "Segoe UI", Tahoma, sans-serif;
+  --fs-h1: 20px;
+  --fs-h2: 18px;
+  --fs-h3: 14px;
+  --fs-kpi: 24px;
+  --fs-body: 13px;
+  --fs-label: 12px;
+  --fs-caption: 11px;
+  --fs-micro: 10px;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+
+  /* ระยะ */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --page-pad: 16px;
+  --gap: 16px;
+  --gap-sm: 12px;
+
+  /* ขนาด */
+  --h-header: 60px;
+  --h-control: 40px;
+  --h-control-sm: 36px;
+  --h-chip: 30px;
+  --h-input: 38px;
+  --h-row: 44px;
+  --h-bar: 26px;
+  --w-day: 36px;
+  --w-week: 84px;
+  --w-month: 120px;
+  --w-namecol: 220px;
+  --w-panel: 320px;
+  --tap-min: 44px;
+
+  /* มุมโค้ง */
+  --r-pill: 999px;
+  --r-card: 18px;
+  --r-kpi: 16px;
+  --r-input: 12px;
+  --r-cell: 6px;
+  --r-ms: 4px;
+  --r-sheet: 24px 24px 0 0;
+
+  /* เงา */
+  --sh-card: 0 2px 8px rgba(47, 42, 74, 0.06);
+  --sh-btn: 0 6px 16px rgba(47, 42, 74, 0.18);
+  --sh-float: 0 -4px 24px rgba(47, 42, 74, 0.14);
+  --sh-seg: 0 1px 2px rgba(47, 42, 74, 0.06);
+
+  /* การเคลื่อนไหว */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --t-fast: 120ms;
+  --t-base: 200ms;
+  --t-slow: 320ms;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --page-pad: 12px;
+    --h-header: 52px;
+    --h-row: 40px;
+    --w-day: 28px;
+    --w-namecol: 120px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-fast: 0ms;
+    --t-base: 0ms;
+    --t-slow: 0ms;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}

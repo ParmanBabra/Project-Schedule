@@ -1,0 +1,196 @@
+{
+  "pages": [
+    {
+      "id": "settings",
+      "name": "ตั้งค่า + Buffer + WBS"
+    },
+    {
+      "id": "mobile",
+      "name": "มือถือ (Layout 2)"
+    },
+    {
+      "id": "layouts",
+      "name": "Layout (แบบ D)"
+    },
+    {
+      "id": "directions",
+      "name": "แนวทางที่เคยเสนอ"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "GanttBuffer.dc.html",
+      "title": "Desktop · Gantt กลุ่มงาน + สำรองเวลา",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 720,
+      "page": "settings"
+    },
+    {
+      "file": "SettingsDesktop.dc.html",
+      "title": "Desktop · ตั้งค่าโปรเจกต์",
+      "x": 0,
+      "y": 860,
+      "w": 1280,
+      "h": 1400,
+      "page": "settings"
+    },
+    {
+      "file": "SettingsMobile.dc.html",
+      "title": "มือถือ · ตั้งค่า สำรองเวลา",
+      "x": 1380,
+      "y": 860,
+      "w": 390,
+      "h": 844,
+      "page": "settings"
+    },
+    {
+      "file": "MobileGantt.dc.html",
+      "title": "มือถือ · Gantt",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "mobile"
+    },
+    {
+      "file": "MobileTaskSheet.dc.html",
+      "title": "มือถือ · แผงงาน (bottom sheet)",
+      "x": 490,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "mobile"
+    },
+    {
+      "file": "MobileCalendar.dc.html",
+      "title": "มือถือ · ปฏิทินตามทรัพยากร",
+      "x": 980,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "mobile"
+    },
+    {
+      "file": "Main.dc.html",
+      "title": "Layout 1 · มาตรฐาน",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 720,
+      "page": "layouts"
+    },
+    {
+      "file": "Layout2.dc.html",
+      "title": "Layout 2 · ไทม์ไลน์เต็มจอ (เลือกแล้ว)",
+      "x": 1380,
+      "y": 0,
+      "w": 1280,
+      "h": 720,
+      "page": "layouts"
+    },
+    {
+      "file": "Layout3.dc.html",
+      "title": "Layout 3 · แผงรายละเอียดขวา",
+      "x": 0,
+      "y": 860,
+      "w": 1280,
+      "h": 720,
+      "page": "layouts"
+    },
+    {
+      "file": "Layout4.dc.html",
+      "title": "Layout 4 · แดชบอร์ด",
+      "x": 1380,
+      "y": 860,
+      "w": 1280,
+      "h": 720,
+      "page": "layouts"
+    },
+    {
+      "file": "Layout5.dc.html",
+      "title": "Layout 5 · Gantt + ภาระงาน",
+      "x": 0,
+      "y": 1720,
+      "w": 1280,
+      "h": 720,
+      "page": "layouts"
+    },
+    {
+      "file": "DirectionA.dc.html",
+      "title": "แบบ A · เรียบ ใช้งานจริง",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 720,
+      "page": "directions"
+    },
+    {
+      "file": "DirectionB.dc.html",
+      "title": "แบบ B · มืด หนาแน่น",
+      "x": 1380,
+      "y": 0,
+      "w": 1280,
+      "h": 720,
+      "page": "directions"
+    },
+    {
+      "file": "DirectionC.dc.html",
+      "title": "แบบ C · กระดาษ บรรณาธิการ",
+      "x": 0,
+      "y": 860,
+      "w": 1280,
+      "h": 720,
+      "page": "directions"
+    },
+    {
+      "file": "DirectionD.dc.html",
+      "title": "แบบ D · สดใส เป็นมิตร (เลือกแล้ว)",
+      "x": 1380,
+      "y": 860,
+      "w": 1280,
+      "h": 720,
+      "page": "directions"
+    },
+    {
+      "file": "DirectionE.dc.html",
+      "title": "แบบ E · โครงร่างหนา",
+      "x": 0,
+      "y": 1720,
+      "w": 1280,
+      "h": 720,
+      "page": "directions"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "layout-guide",
+      "x": 1380,
+      "y": 1720,
+      "w": 540,
+      "page": "layouts",
+      "text": "Layout 5 แบบ ในสไตล์ D (สดใส เป็นมิตร)\n\n1 มาตรฐาน – ตารางซ้าย ไทม์ไลน์ขวา คุ้นเคยที่สุด\n2 ไทม์ไลน์เต็มจอ – เมนูขึ้นบน ตารางยุบ ให้ Gantt กว้างสุด\n3 แผงรายละเอียดขวา – แก้งานและดู CPM ได้โดยไม่ต้องเปิด modal\n4 แดชบอร์ด – ตัวเลขสรุป + Gantt + ภาระงาน ในจอเดียว\n5 Gantt + ภาระงาน – ทรัพยากรอยู่ใต้ไทม์ไลน์ แกนเวลาเดียวกัน\n\nผสมได้ เช่น 5 เป็นหลัก แล้วเอาแผงขวาของ 3 มาใช้ตอนคลิกงาน"
+    },
+    {
+      "id": "directions-note",
+      "x": 1380,
+      "y": 1720,
+      "w": 400,
+      "page": "directions",
+      "text": "เลือกแบบ D แล้ว หน้านี้เก็บไว้อ้างอิง"
+    },
+    {
+      "id": "mobile-note",
+      "x": 1470,
+      "y": 0,
+      "w": 420,
+      "page": "mobile",
+      "text": "มือถือ (< 768px) ในโครง Layout 2\n\n• เมนูย้ายลงล่างเป็น BottomNav 3 แท็บ ปุ่ม + ตรงกลางสำหรับเพิ่มงาน\n• Gantt: คอลัมน์ชื่อ 120px ตรึงซ้าย เลื่อนแนวนอนด้วยนิ้ว zoom เริ่มที่สัปดาห์ ไม่มีการลากแถบ แตะเพื่อเปิด sheet\n• แผงงานกลายเป็น bottom sheet เปิดครึ่งจอ ลากขึ้นเต็มจอ ช่องกรอกสูง 44px\n• ปฏิทิน: เลือกคนจากแถวชิปด้านบน แล้วดูรายวันแนวตั้ง วันที่เกินกำลังพื้นชมพู\n\nรายละเอียดอยู่ใน docs/ui-design.md ส่วนที่ 5"
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "settings"
+  }
+}

@@ -1,0 +1,26 @@
+# data (user files – never commit)
+/data/
+/.e2e-data/
+
+# python
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# node
+node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+
+# design canvas build output (source .mjs files are kept)
+design/*.dc.html
+design/project-scheduler-directions.html
+
+# misc
+.DS_Store
+Thumbs.db
+*.log
