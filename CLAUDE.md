@@ -28,13 +28,31 @@ Web app สำหรับวางแผนโปรเจกต์: Gantt + Ca
 
 รายงานผลตามจริง ถ้า test ใดยังไม่ผ่านหรือยังไม่ได้เขียน ให้บอกชัดเจน
 
+## กติกาสำคัญ: Design review ด้วยภาพหน้าจอจริง
+
+ผู้ใช้ไม่ได้เปิดดูแอปเอง AI ต้องเป็นคนดูหน้าจอแทน **ทุกงานที่แตะ UI จบด้วย design review** ตามวงจรนี้
+
+1. ลงทะเบียนหน้า/สถานะใหม่ใน `frontend/shots/screens.ts` พร้อมชื่อ mockup ที่คู่กัน (artboard ใน `design/`)
+2. `cd frontend && npm run shots` ถ่ายภาพแอปจริงทั้ง desktop และ mobile ลง `frontend/.screenshots/app/` และ render mockup ลง `frontend/.screenshots/mockups/`
+3. เปิดภาพด้วยเครื่องมือ Read เทียบคู่กับ mockup และ `docs/design-system.md` แล้วสรุปรายการที่ต้องแก้ (สี ระยะ ตัวอักษร มุมโค้ง เงา พื้นที่แตะ >= 44px ข้อความล้น สถานะว่าง)
+4. แก้ → ถ่ายใหม่ → เทียบซ้ำ จนไม่เหลือข้อระดับสูงหรือกลาง
+5. รายงานผู้ใช้เป็นตารางก่อน/หลัง แล้วเสนอให้ล็อก baseline
+
+คำสั่งลัด: `/design-review` ทำข้อ 1 ถึง 5 ให้ครบ, `/design-approve` ล็อกภาพปัจจุบันเป็น baseline ของ visual regression (`frontend/e2e/visual.spec.ts`, snapshot อยู่ใน `e2e/visual.spec.ts-snapshots/` และ commit ไว้)
+
+- `npm run test:visual` ต้องเขียวก่อนจบงาน UI ถ้าแดงเพราะตั้งใจเปลี่ยนหน้าตา ให้ทำ design review แล้ว approve ใหม่ ห้าม approve เพื่อให้ผ่านโดยไม่ได้ดูภาพ
+- ถ้าเปลี่ยนทิศทางการออกแบบ แก้ที่ `docs/design-system.md` และ artboard ใน `design/` ก่อน แล้วค่อยแก้โค้ดให้ตาม
+
 ## คำสั่ง
 
 ```
 npm run dev          # รัน backend :8000 + frontend :5173 พร้อมกัน
 npm test             # pytest + vitest
-npm run test:e2e     # playwright (เปิด server ให้เองถ้ายังไม่รัน)
+npm run test:e2e     # playwright (เปิด server ให้เองถ้ายังไม่รัน) ไม่รวม visual
 npm run lint         # ruff + oxlint
+cd frontend && npm run shots           # ถ่ายภาพทุกหน้า + mockup สำหรับ design review
+cd frontend && npm run test:visual     # visual regression เทียบ baseline
+cd frontend && npm run visual:approve  # ล็อก baseline ใหม่ (หลัง review เท่านั้น)
 ```
 
 หรือใช้ VS Code: Terminal → Run Task → `dev: all`, `test: all`, `test: e2e (playwright)`

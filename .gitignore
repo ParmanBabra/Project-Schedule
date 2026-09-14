@@ -24,3 +24,6 @@ design/project-scheduler-directions.html
 .DS_Store
 Thumbs.db
 *.log
+
+# design review screenshots (regenerated on demand)
+frontend/.screenshots/

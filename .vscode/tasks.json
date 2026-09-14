@@ -87,6 +87,33 @@
       "problemMatcher": []
     },
     {
+      "label": "design: shots (ถ่ายภาพทุกหน้า + mockup)",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "shots"],
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "presentation": { "panel": "dedicated", "group": "design" },
+      "problemMatcher": []
+    },
+    {
+      "label": "design: visual regression",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "test:visual"],
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "presentation": { "panel": "dedicated", "group": "design" },
+      "problemMatcher": []
+    },
+    {
+      "label": "design: approve baseline",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "visual:approve"],
+      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "presentation": { "panel": "dedicated", "group": "design" },
+      "problemMatcher": []
+    },
+    {
       "label": "lint: all",
       "dependsOn": ["lint: backend", "lint: frontend"],
       "dependsOrder": "sequence",
