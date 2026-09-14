@@ -16,11 +16,12 @@ for (const screen of screens) {
       await screen.setup(page)
       await settle(page)
     }
+    // hide the today marker (it moves every day) instead of masking it, so baselines stay clean
+    await page.addStyleTag({ content: '[data-testid="today-line"], [data-testid="today-tag"] { visibility: hidden !important; }' })
     await expect(page).toHaveScreenshot(`${screen.name}.png`, {
       fullPage: true,
       maxDiffPixelRatio: 0.002,
       animations: 'disabled',
-      mask: [page.getByTestId('today-line')],
     })
   })
 }
