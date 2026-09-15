@@ -113,7 +113,7 @@ export const screens: Screen[] = [
 ]
 
 /** Mockup artboards rendered for side-by-side reference (design/*.dc.html). */
-export const mockups = ['Layout2', 'Layout3', 'GanttBuffer', 'SettingsDesktop', 'SettingsMobile', 'MobileGantt', 'MobileTaskSheet', 'MobileCalendar', 'TaskChecklist', 'ChainDialog', 'MobileChecklist', 'MobileChain', 'TopicEntry', 'TopicDialog', 'TopicPaste', 'MobileTopic']
+export const mockups = ['Layout2', 'Layout3', 'GanttBuffer', 'SettingsDesktop', 'SettingsMobile', 'MobileGantt', 'MobileTaskSheet', 'MobileCalendar', 'TaskChecklist', 'ChainDialog', 'MobileChecklist', 'MobileChain', 'TopicEntry', 'TopicDialog', 'TopicPaste', 'MobileTopic', 'TopicSelect', 'TopicPanel']
 
 export async function resolvePath(screen: Screen, request: APIRequestContext): Promise<string> {
   return typeof screen.path === 'string' ? screen.path : screen.path(request)

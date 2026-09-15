@@ -23,6 +23,24 @@
   ],
   "artboards": [
     {
+      "file": "TopicSelect.dc.html",
+      "title": "Desktop · เลือกงานที่มีอยู่ → รวมเป็นหัวข้อ",
+      "x": 1640,
+      "y": 2000,
+      "w": 900,
+      "h": 560,
+      "page": "tasks"
+    },
+    {
+      "file": "TopicPanel.dc.html",
+      "title": "Desktop · แผงงาน: ช่อง \"อยู่ในหัวข้อ\"",
+      "x": 1640,
+      "y": 2680,
+      "w": 720,
+      "h": 620,
+      "page": "tasks"
+    },
+    {
       "file": "TopicEntry.dc.html",
       "title": "Desktop · จุดเข้า: ปุ่มเพิ่มงานแบบแยก",
       "x": 0,
