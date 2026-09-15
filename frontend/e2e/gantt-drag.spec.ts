@@ -49,6 +49,14 @@ test('ลากขอบปรับระยะเวลา, ลากเชื
   await expect(page.getByTestId('drag-ghost')).toContainText('6 วัน')
   await page.mouse.up()
   await expect(page.getByText(/"ออกแบบ UI" เป็น 6 วัน/)).toBeVisible()
+  // the open panel follows the change made on the chart
+  await page.locator(`[data-testid="bar-${uiId}"]`).click()
+  const panel = page.getByRole('complementary', { name: /^รายละเอียดงาน/ })
+  await expect(panel.getByLabel('ระยะเวลา', { exact: true })).toHaveValue('6')
+  await dragBy(page, `[data-testid="resize-${uiId}"]`, 36)
+  await page.mouse.up()
+  await expect(panel.getByLabel('ระยะเวลา', { exact: true })).toHaveValue('7')
+  await page.keyboard.press('Escape')
 
   // link ออกแบบ UI -> พัฒนา Backend (new FS dependency)
   const before = await page.locator('[data-testid^="dep-hit-"]').count()

@@ -78,6 +78,16 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taskId])
 
+  // the task can change outside the panel (drag/resize on the Gantt, undo): follow the server
+  // value for every field that has no unsaved edit of its own
+  useEffect(() => {
+    if (!task) return
+    if (pending.current.duration === undefined) setDuration(task.duration)
+    if (pending.current.progress === undefined) setProgress(task.progress)
+    if (pending.current.name === undefined) setName(task.name)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [task?.duration, task?.progress, task?.name])
+
   const flush = () => {
     const body = pending.current
     pending.current = {}
