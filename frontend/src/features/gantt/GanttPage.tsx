@@ -1,4 +1,4 @@
-import { CalendarDays, Flag, List, Lock, Plus, Redo2, Undo2 } from 'lucide-react'
+import { CalendarDays, ChevronDown, CheckSquare, ClipboardPaste, FolderKanban, Flag, List, Lock, Plus, Redo2, Undo2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useParams, useSearchParams } from 'react-router-dom'
@@ -12,8 +12,14 @@ import { useSchedulePreview } from '@/features/settings/api'
 import { TaskPanel } from '@/features/tasks/TaskPanel'
 import { ApiError } from '@/shared/api/client'
 import { formatThai, todayISO } from '@/shared/lib/date'
-import { Button, Card, Chip, EmptyState, IconButton, Segment, Skeleton, Toggle, useToast } from '@/shared/ui'
+import { Button, Card, Chip, EmptyState, IconButton, Menu, Segment, Select, Skeleton, Toggle, useToast } from '@/shared/ui'
 import { ExportMenu } from '@/features/io/ExportMenu'
+import { CreateEpicDialog, type EpicTab } from '@/features/epics/CreateEpicDialog'
+import { EpicPanel } from '@/features/epics/EpicPanel'
+import { useAddEpicMembers } from '@/features/epics/api'
+import { epicsOf } from '@/features/epics/lib/epics'
+import epicStyles from '@/features/epics/epics.module.css'
+import { useMoveTask } from '@/features/projects/api'
 import { AddTaskDialog } from './AddTaskDialog'
 import { DependencyPopover } from './DependencyPopover'
 import { GanttChart, type DragPatch } from './GanttChart'
@@ -66,6 +72,13 @@ export function GanttPage() {
   const [zoom, setZoomState] = useState<Zoom>(readZoom)
   const [highlight, setHighlight] = useState(true)
   const [adding, setAdding] = useState(false)
+  const [epicDialog, setEpicDialog] = useState<{ tab: EpicTab; taskIds?: string[] } | null>(null)
+  const [selecting, setSelecting] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [moveTarget, setMoveTarget] = useState<string>('')
+  const addMembers = useAddEpicMembers(projectId)
+  const moveTask = useMoveTask(projectId)
+  const epicFilter = params.get('epic')
   const [listOpen, setListOpen] = useState(false)
   const [scrollToken, setScrollToken] = useState(0)
   const [dragPatch, setDragPatch] = useState<DragPatch | null>(null)
@@ -235,6 +248,8 @@ export function GanttPage() {
     { value: 'month' as const, label: 'เดือน', title: 'คีย์ 3' },
   ].filter((o) => !isMobile || o.value !== 'day') // มือถือไม่มีซูมรายวัน (ui-design §5.2)
   const effectiveZoom: Zoom = isMobile && zoom === 'day' ? 'week' : zoom
+  const epics = epicsOf(p)
+  const sameParent = new Set([...selectedIds].map((id) => p.tasks.find((t) => t.id === id)?.parentId ?? null)).size <= 1
 
   return (
     <div className={styles.page}>
@@ -249,6 +264,19 @@ export function GanttPage() {
         <span className={styles.cpToggle}>
           <Toggle checked={highlight} onChange={setHighlight} label="Critical path" />
         </span>
+        {epics.length > 0 && (
+          <span className={styles.epicFilter}>
+            <Select<string>
+              aria-label="กรองตาม Epic"
+              value={epicFilter ?? ''}
+              onChange={(v) => setParams((prev) => { const n = new URLSearchParams(prev); if (v) n.set('epic', v); else n.delete('epic'); return n }, { replace: true })}
+              options={[{ value: '', label: 'ทุก Epic' }, ...epics.map((e) => ({ value: e.id, label: `Epic: ${e.name}` }))]}
+            />
+          </span>
+        )}
+        <Button size="sm" icon={<CheckSquare size={16} />} onClick={() => { setSelecting((v) => !v); setSelectedIds(new Set()) }} aria-pressed={selecting} aria-label="เลือกหลายงาน" title="เลือกหลายงานเพื่อรวมเป็น Epic หรือย้าย" disabled={p.tasks.length === 0} className={styles.todayBtn}>
+          <span className={styles.todayLabel}>{selecting ? 'เลิกเลือก' : 'เลือกหลายงาน'}</span>
+        </Button>
         {isMobile && p.tasks.length > 0 ? (
           <button type="button" className={styles.todayFab} onClick={() => setScrollToken((n) => n + 1)} aria-label="เลื่อนไปวันนี้ (ลอย)" data-testid="today-fab">
             <CalendarDays size={18} />
@@ -323,9 +351,23 @@ export function GanttPage() {
           )}
         </div>
         <ExportMenu projectId={p.id} projectName={p.name} compact={isMobile} pngTarget={() => document.querySelector<HTMLElement>('[data-testid="gantt-chart"]')} />
-        <Button variant="primary" size="sm" icon={<Plus size={16} />} onClick={() => setAdding(true)} className={styles.addBtn} aria-label="เพิ่มงาน" title="คีย์ N">
-          <span>เพิ่มงาน</span>
-        </Button>
+        <span className={[styles.addBtn, styles.split].join(' ')}>
+          <Button variant="primary" size="sm" icon={<Plus size={16} />} onClick={() => setAdding(true)} aria-label="เพิ่มงาน" title="คีย์ N">
+            <span>เพิ่มงาน</span>
+          </Button>
+          <Menu
+            items={[
+              { label: 'เพิ่มงาน', icon: <Plus size={16} />, onSelect: () => setAdding(true) },
+              { label: 'สร้าง Epic (กลุ่ม + งานข้างใน)', icon: <FolderKanban size={16} />, onSelect: () => setEpicDialog({ tab: 'manual' }) },
+              { label: 'วางจาก Excel / รายการ', icon: <ClipboardPaste size={16} />, onSelect: () => setEpicDialog({ tab: 'paste' }) },
+            ]}
+            trigger={(props) => (
+              <Button variant="primary" size="sm" aria-label="ตัวเลือกเพิ่ม" className={styles.splitCaret} {...props}>
+                <ChevronDown size={16} />
+              </Button>
+            )}
+          />
+        </span>
       </div>
 
       <Card className={[styles.card, selectedId && p.schedule.tasks[selectedId] && styles.withPanel].filter(Boolean).join(' ')}>
@@ -346,6 +388,10 @@ export function GanttPage() {
             <GanttChart
               project={p}
               zoom={effectiveZoom}
+              rootId={epicFilter && p.schedule.tasks[epicFilter] ? epicFilter : null}
+              selectable={selecting}
+              selectedIds={selectedIds}
+              onToggleSelected={(id, on) => setSelectedIds((prev) => { const n = new Set(prev); if (on) n.add(id); else n.delete(id); return n })}
               highlightCritical={highlight}
               selectedId={selectedId}
               onSelect={select}
@@ -371,10 +417,48 @@ export function GanttPage() {
             </div>
           </>
         )}
-        {selectedId && p.schedule.tasks[selectedId] && <TaskPanel project={p} taskId={selectedId} onClose={() => select(null)} onSelect={select} />}
+        {selectedId && p.schedule.tasks[selectedId] && (p.tasks.find((t) => t.id === selectedId)?.epic ? <EpicPanel project={p} taskId={selectedId} onClose={() => select(null)} onSelect={select} /> : <TaskPanel project={p} taskId={selectedId} onClose={() => select(null)} onSelect={select} />)}
       </Card>
 
       <AddTaskDialog project={p} open={adding} onClose={() => setAdding(false)} onCreated={(id) => select(id)} />
+      {epicDialog && (
+        <CreateEpicDialog
+          project={p}
+          open
+          initialTab={epicDialog.tab}
+          initialTaskIds={epicDialog.taskIds}
+          defaultName={epicDialog.taskIds?.length ? (p.tasks.find((t) => t.id === epicDialog.taskIds![0])?.name ?? '') : ''}
+          onClose={() => setEpicDialog(null)}
+          onCreated={(out) => {
+            setSelecting(false)
+            setSelectedIds(new Set())
+            const created = out.tasks.find((t) => t.epic && !p.tasks.some((x) => x.id === t.id))
+            if (created) select(created.id)
+          }}
+        />
+      )}
+      {selecting && (
+        <div className={epicStyles.selBar} role="toolbar" aria-label="งานที่เลือก" data-testid="selection-bar">
+          <span>เลือก {selectedIds.size} งาน</span>
+          <button type="button" className={[epicStyles.selBtn, epicStyles.selPri].join(' ')} disabled={selectedIds.size === 0 || !sameParent} title={sameParent ? undefined : 'งานที่เลือกต้องอยู่ระดับเดียวกัน'} onClick={() => setEpicDialog({ tab: 'existing', taskIds: [...selectedIds] })}>
+            <FolderKanban size={16} /> รวมเป็น Epic
+          </button>
+          {epics.length > 0 && (
+            <>
+              <Select<string> aria-label="ย้ายไป Epic" value={moveTarget} onChange={setMoveTarget} options={[{ value: '', label: 'ย้ายไป Epic…' }, ...epics.filter((e) => !selectedIds.has(e.id)).map((e) => ({ value: e.id, label: e.name }))]} className={styles.selSelect} />
+              <button type="button" className={epicStyles.selBtn} disabled={!moveTarget || selectedIds.size === 0} onClick={() => addMembers.mutate({ taskId: moveTarget, taskIds: [...selectedIds] }, { onSuccess: () => { toast.success(`ย้าย ${selectedIds.size} งานแล้ว`); setSelectedIds(new Set()); setMoveTarget('') }, onError: () => toast.error('ย้ายไม่สำเร็จ') })}>
+                ย้าย
+              </button>
+            </>
+          )}
+          <button type="button" className={epicStyles.selBtn} disabled={![...selectedIds].some((id) => p.tasks.find((t) => t.id === id)?.parentId)} onClick={() => { const ids = [...selectedIds]; ids.forEach((id) => { const t = p.tasks.find((x) => x.id === id); const parent = t?.parentId ? p.tasks.find((x) => x.id === t.parentId) : null; if (t && parent) moveTask.mutate({ taskId: id, parentId: parent.parentId }) }); setSelectedIds(new Set()) }}>
+            เอาออกจาก Epic
+          </button>
+          <button type="button" className={epicStyles.selX} aria-label="เลิกเลือก" onClick={() => { setSelecting(false); setSelectedIds(new Set()) }}>
+            <X size={16} />
+          </button>
+        </div>
+      )}
       <TaskListDrawer
         project={p}
         open={listOpen}

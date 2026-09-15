@@ -82,7 +82,7 @@ frontend/e2e/      playwright specs
 data/              JSON files (ignored by git)
 ```
 
-ชื่อ feature module ต้องตรงกันทั้งสองฝั่ง: auth, projects, tasks, dependencies, scheduling, gantt (fe only), calendar (fe only), resources, assignments, settings, io, history
+ชื่อ feature module ต้องตรงกันทั้งสองฝั่ง: auth, projects, tasks, epics, dependencies, scheduling, gantt (fe only), calendar (fe only), resources, assignments, settings, io, history
 
 ## ข้อตกลงด้านโค้ด
 

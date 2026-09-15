@@ -1,4 +1,4 @@
-import { Calendar, FolderKanban, GanttChartSquare, Plus, Users } from 'lucide-react'
+import { Calendar, GanttChartSquare, Layers, Plus, Users } from 'lucide-react'
 import { NavLink, useLocation, useNavigate, useParams } from 'react-router-dom'
 import styles from './BottomNav.module.css'
 import { useUiStore } from './uiStore'
@@ -30,12 +30,12 @@ export function BottomNav() {
           <button type="button" className={styles.fab} aria-label="เพิ่มงาน" onClick={onAdd}>
             <Plus size={26} />
           </button>
+          <Tab to={`/p/${projectId}/epics`} icon={<Layers size={22} />} label="Epics" />
           <Tab to="/resources" icon={<Users size={22} />} label="ทรัพยากร" />
-          <Tab to="/" end icon={<FolderKanban size={22} />} label="โปรเจกต์" />
         </>
       ) : (
         <>
-          <Tab to="/" end icon={<FolderKanban size={22} />} label="โปรเจกต์" />
+          <Tab to="/" end icon={<Layers size={22} />} label="โปรเจกต์" />
           <Tab to="/resources" icon={<Users size={22} />} label="ทรัพยากร" />
         </>
       )}

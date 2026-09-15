@@ -23,6 +23,9 @@ import {
   Toggle,
   useToast,
 } from '@/shared/ui'
+import { useCreateEpic } from '@/features/epics/api'
+import { epicsOf } from '@/features/epics/lib/epics'
+import { useMoveTask } from '@/features/projects/api'
 import { AssignmentSection } from './AssignmentSection'
 import { ChainDialog } from './ChainDialog'
 import { ChecklistSection } from './ChecklistSection'
@@ -131,6 +134,10 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
   const [newPred, setNewPred] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [chainOpen, setChainOpen] = useState(false)
+  const moveTask = useMoveTask(project.id)
+  const createEpic = useCreateEpic(project.id)
+  const [newEpicName, setNewEpicName] = useState<string | null>(null)
+  const epicChoices = useMemo(() => epicsOf(project).filter((e) => e.id !== taskId), [project, taskId])
 
   if (!task || !schedule) return null
   const isSummary = schedule.isSummary
@@ -277,6 +284,24 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
             </div>
           )}
 
+          <Field label="อยู่ใน Epic" htmlFor="tp-epic" hint="ย้ายแล้วความสัมพันธ์และผู้รับผิดชอบเดิมอยู่ครบ">
+            <Select<string>
+              id="tp-epic"
+              value={task.parentId && project.tasks.find((t) => t.id === task.parentId)?.epic ? task.parentId : task.parentId ? `group:${task.parentId}` : ''}
+              onChange={(v) => {
+                if (v === '__new__') setNewEpicName(task.name)
+                else if (v.startsWith('group:')) return
+                else moveTask.mutate({ taskId, parentId: v || null }, { onError: (e) => toast.error(apiMessage(e, 'ย้ายไม่สำเร็จ')) })
+              }}
+              options={[
+                { value: '', label: 'ไม่มี (ระดับบนสุด)' },
+                ...(task.parentId && !project.tasks.find((t) => t.id === task.parentId)?.epic ? [{ value: `group:${task.parentId}`, label: `กลุ่ม: ${byId.get(task.parentId)?.name ?? ''}` }] : []),
+                ...epicChoices.map((e) => ({ value: e.id, label: e.name })),
+                { value: '__new__', label: '+ สร้าง Epic ใหม่แล้วย้ายไป…' },
+              ]}
+            />
+          </Field>
+
           {!isSummary && <ChecklistSection project={project} taskId={taskId} />}
 
           {!isSummary && (
@@ -374,6 +399,25 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
       </aside>
 
       {chainOpen && <ChainDialog project={project} taskId={taskId} open={chainOpen} onClose={() => setChainOpen(false)} />}
+
+      <Dialog
+        open={newEpicName !== null}
+        onClose={() => setNewEpicName(null)}
+        title="สร้าง Epic ใหม่แล้วย้ายงานนี้เข้าไป"
+        description={`"${task.name}" จะกลายเป็นงานแรกใน Epic ใหม่ แก้สีและเป้าหมายได้ในแผง Epic`}
+        actions={
+          <>
+            <Button onClick={() => setNewEpicName(null)}>ยกเลิก</Button>
+            <Button variant="primary" disabled={!newEpicName?.trim() || createEpic.isPending} onClick={() => createEpic.mutate({ name: newEpicName!.trim(), existingTaskIds: [taskId], position: 'after', afterTaskId: task.parentId ? null : taskId, parentId: task.parentId }, { onSuccess: () => { setNewEpicName(null); toast.success('สร้าง Epic แล้ว') }, onError: (e) => toast.error(apiMessage(e, 'สร้าง Epic ไม่สำเร็จ')) })}>
+              สร้าง Epic
+            </Button>
+          </>
+        }
+      >
+        <Field label="ชื่อ Epic" htmlFor="tp-new-epic">
+          <Input id="tp-new-epic" value={newEpicName ?? ''} onChange={(e) => setNewEpicName(e.target.value)} maxLength={200} autoFocus />
+        </Field>
+      </Dialog>
 
       <Dialog
         open={confirmDelete}

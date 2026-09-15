@@ -5,6 +5,7 @@ import { RequireAuth } from '@/features/auth/RequireAuth'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
 import { GanttPage } from '@/features/gantt/GanttPage'
 import { CalendarPage } from '@/features/calendar/CalendarPage'
+import { EpicsPage } from '@/features/epics/EpicsPage'
 import { ResourcesPage } from '@/features/resources/ResourcesPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { UiPage } from '@/dev/UiPage'
@@ -21,6 +22,7 @@ export function AppRoutes() {
         <Route path="/p/:projectId" element={<Navigate to="gantt" replace />} />
         <Route path="/p/:projectId/gantt" element={<GanttPage />} />
         <Route path="/p/:projectId/calendar" element={<CalendarPage />} />
+        <Route path="/p/:projectId/epics" element={<EpicsPage />} />
         <Route path="/p/:projectId/settings" element={<SettingsPage />} />
       </Route>
       </Route>

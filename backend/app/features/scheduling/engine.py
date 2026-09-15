@@ -138,7 +138,7 @@ def _graph(
 ) -> tuple[dict[str, _Node], list[_Edge]]:
     nodes: dict[str, _Node] = {}
     for t in project.tasks:
-        is_summary = bool(children.get(t.id))
+        is_summary = bool(children.get(t.id)) or t.epic is not None
         dur = 0 if (t.is_milestone or is_summary) else max(0, t.duration)
         node = _Node(task=t, is_summary=is_summary, dur=dur)
         if is_summary:
@@ -261,6 +261,10 @@ def compute_schedule(project: Project, today: date | None = None) -> Schedule:
         n = nodes[nid]
         if n.is_summary:
             leaf_nodes = [nodes[i] for i in n.leaves]
+            if not leaf_nodes:  # empty Epic: sits at the project start with no length
+                n.es = n.ef = 0
+                n.dur = 0
+                continue
             n.es = min(x.es for x in leaf_nodes)
             n.ef = max(x.ef for x in leaf_nodes)
             n.dur = n.ef - n.es
@@ -353,6 +357,10 @@ def compute_schedule(project: Project, today: date | None = None) -> Schedule:
         if not n.is_summary:
             continue
         leaf_nodes = [nodes[i] for i in n.leaves]
+        if not leaf_nodes:
+            n.tf = n.ff = max(0, project_end - n.ef)
+            n.ls, n.lf = n.es + n.tf, n.ef + n.tf
+            continue
         n.tf = min(x.tf for x in leaf_nodes)
         n.ff = min(x.ff for x in leaf_nodes)
         n.ls = n.es + n.tf

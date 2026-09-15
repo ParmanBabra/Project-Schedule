@@ -82,12 +82,19 @@ def update_task(
 ) -> ProjectOut:
     project = repo.get(project_id)
     task = _task(project, task_id)
-    for key in body.model_fields_set - {"clear_constraint", "clear_estimate", "checklist"}:
+    for key in body.model_fields_set - {
+        "clear_constraint",
+        "clear_estimate",
+        "clear_epic",
+        "checklist",
+    }:
         value = getattr(body, key)
         if value is not None:
             setattr(task, key, value)
     if body.checklist is not None:
         _apply_checklist(project, task, body.checklist)
+    if body.clear_epic:
+        task.epic = None
     if body.clear_constraint:
         task.constraint = None
     if body.clear_estimate:

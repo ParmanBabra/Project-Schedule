@@ -17,6 +17,7 @@ from app.core.web import AuthGateMiddleware, SecurityHeadersMiddleware, mount_sp
 from app.features.assignments.router import router as assignments_router
 from app.features.auth.router import router as auth_router
 from app.features.dependencies.router import router as dependencies_router
+from app.features.epics.router import router as epics_router
 from app.features.io.router import router as io_router
 from app.features.projects.baseline import router as baseline_router
 from app.features.projects.router import router as projects_router
@@ -55,6 +56,7 @@ def create_app() -> FastAPI:
         projects_router,
         baseline_router,
         tasks_router,
+        epics_router,
         dependencies_router,
         scheduling_router,
         settings_router,

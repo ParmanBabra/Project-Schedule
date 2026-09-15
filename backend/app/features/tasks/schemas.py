@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from app.core.models import CamelModel, ChainStep, Constraint, Estimate
+from app.core.models import CamelModel, ChainStep, Constraint, EpicInfo, Estimate
 
 
 class TaskCreate(CamelModel):
@@ -32,6 +32,8 @@ class TaskUpdate(CamelModel):
     clear_estimate: bool = False
     checklist: list[ChecklistItemIn] | None = None  # full replace (order = list order)
     progress_from_checklist: bool | None = None
+    epic: EpicInfo | None = None  # set/replace the Epic info of a group
+    clear_epic: bool = False  # turn an Epic back into a plain group
 
 
 class ChecklistItemIn(CamelModel):

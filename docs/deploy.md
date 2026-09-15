@@ -17,6 +17,7 @@
 | `DATA_DIR` | – | โฟลเดอร์ข้อมูล ค่าเริ่มต้น `data/` |
 | `CONFIG_FILE` | – | path ของ config.json อื่น |
 | `AUTH_DISABLED` | `authDisabled` | ปิดล็อกอิน ใช้เฉพาะเครื่องตัวเอง/ทดสอบ |
+| `AUTH_MAX_FAILURES` | `loginMaxFailures` | จำนวนครั้งที่ใส่รหัสผิดได้ต่อนาทีต่อ IP ก่อนโดน 429 (ค่าเริ่มต้น 5) |
 
 ตัวอย่างไฟล์: [`backend/config.example.json`](../backend/config.example.json) (คัดลอกเป็น `backend/config.json` ซึ่งถูก git-ignore)
 

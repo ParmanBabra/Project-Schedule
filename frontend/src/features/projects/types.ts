@@ -29,6 +29,12 @@ export interface ChainStep {
   parallel: boolean
 }
 
+export interface EpicInfo {
+  color: string
+  description: string
+  ownerResourceId: string | null
+}
+
 export interface Task {
   id: string
   name: string
@@ -43,6 +49,7 @@ export interface Task {
   estimate: Estimate | null
   checklist: ChecklistItem[]
   progressFromChecklist: boolean
+  epic: EpicInfo | null
 }
 
 export interface Dependency {
@@ -228,6 +235,40 @@ export interface TaskUpdate {
   clearEstimate?: boolean
   checklist?: Array<{ id?: string; text: string; done: boolean }>
   progressFromChecklist?: boolean
+  epic?: EpicInfo
+  clearEpic?: boolean
+}
+
+export interface EpicTaskIn {
+  name: string
+  duration?: number
+  checklist?: string[]
+}
+
+export interface EpicCreate {
+  name: string
+  color?: string
+  description?: string
+  ownerResourceId?: string | null
+  tasks?: EpicTaskIn[]
+  existingTaskIds?: string[]
+  sequential?: boolean
+  position?: 'end' | 'after'
+  afterTaskId?: string | null
+  parentId?: string | null
+}
+
+export interface EpicBulkCreate {
+  epics: EpicCreate[]
+  linkEpics?: boolean
+}
+
+export interface EpicUpdate {
+  name?: string
+  color?: string
+  description?: string
+  ownerResourceId?: string | null
+  clearOwner?: boolean
 }
 
 export interface ChainBody {

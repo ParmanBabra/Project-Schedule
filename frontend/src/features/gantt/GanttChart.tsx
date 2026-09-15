@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as
 import type { ProjectOut, Schedule, TaskSchedule } from '@/features/projects/types'
 import { formatThai, todayISO } from '@/shared/lib/date'
 import { DRAG_THRESHOLD_PX, moveTarget, resizeTarget, snapDays, type DragMode, type DragState } from './lib/drag'
-import { buildOutline, rowIndexMap } from './lib/outline'
+import { buildOutline, epicColors, rowIndexMap } from './lib/outline'
 import {
   BAR_HEIGHT,
   DEP_SIDES,
@@ -45,6 +45,12 @@ export interface GanttChartProps {
   /** Schedule computed for the in-flight drag; bars of changed tasks are drawn from it. */
   previewSchedule?: Schedule | null
   interactive?: boolean
+  /** show only this task and its descendants (Epic filter) */
+  rootId?: string | null
+  /** selection mode: checkboxes in the name column */
+  selectable?: boolean
+  selectedIds?: Set<string>
+  onToggleSelected?: (id: string, on: boolean) => void
 }
 
 const NAME_COL = 220
@@ -64,10 +70,15 @@ export function GanttChart({
   onArrowClick,
   previewSchedule,
   interactive = true,
+  rootId = null,
+  selectable = false,
+  selectedIds,
+  onToggleSelected,
 }: GanttChartProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const timeRef = useRef<HTMLDivElement>(null)
-  const rows = useMemo(() => buildOutline(project), [project])
+  const rows = useMemo(() => buildOutline(project, rootId), [project, rootId])
+  const epicColor = useMemo(() => epicColors(project), [project])
   const axis = useMemo(() => computeAxis(project, zoom, 900), [project, zoom])
   const headers = useMemo(() => headerRows(axis, zoom), [axis, zoom])
   const shades = useMemo(() => nonWorkingShades(axis, project.workingDays, project.holidays), [axis, project.workingDays, project.holidays])
@@ -289,6 +300,15 @@ export function GanttChart({
                 className={[styles.nameRow, r.hasChildren && styles.nameRowSummary, selectedId === r.task.id && styles.nameRowSel].filter(Boolean).join(' ')}
                 aria-current={selectedId === r.task.id ? 'true' : undefined}
               >
+                {selectable && (
+                  <input
+                    type="checkbox"
+                    className={styles.selectBox}
+                    aria-label={`เลือก ${r.task.name}`}
+                    checked={selectedIds?.has(r.task.id) ?? false}
+                    onChange={(e) => onToggleSelected?.(r.task.id, e.target.checked)}
+                  />
+                )}
                 <span className={styles.wbs}>{r.schedule.wbs}</span>
                 <span style={{ width: r.depth * 16, flexShrink: 0 }} />
                 {r.hasChildren ? (
@@ -304,8 +324,9 @@ export function GanttChart({
                   title={r.schedule.health === 'late' ? `${r.task.name} · ล่าช้า (ควรได้ ${r.schedule.expectedProgress}% ได้ ${r.task.progress}%)` : r.task.name}
                   onClick={() => onSelect(r.task.id)}
                 >
-                  <Dot row={r} highlight={highlightCritical} />
+                  <Dot row={r} highlight={highlightCritical} epicColor={epicColor.get(r.task.id)} />
                   <span className={styles.name}>{r.task.name}</span>
+                  {r.task.epic && <span className={styles.epicBadge} data-testid={`epic-badge-${r.task.id}`}>Epic</span>}
                   {r.schedule.health === 'late' && (
                     <span className={styles.lateTag} data-testid={`late-${r.task.id}`}>
                       ล่าช้า
@@ -377,15 +398,15 @@ export function GanttChart({
               const selected = selectedId === r.task.id
               const preview = changedByPreview(r.task.id)
               const dragging = drag?.active && drag.taskId === r.task.id && drag.mode !== 'link'
-              if (r.hasChildren) {
+              if (r.hasChildren || r.task.epic) {
                 return (
                   <button
                     key={r.task.id}
                     type="button"
                     aria-label={`กลุ่ม ${r.task.name}`}
                     data-testid={`bar-${r.task.id}`}
-                    className={[styles.summaryBar, crit(s.isCritical) && styles.summaryCritical, selected && styles.summarySel, preview && styles.previewBar].filter(Boolean).join(' ')}
-                    style={{ left: g.x, width: Math.max(g.width, 12), top: r.index * ROW_HEIGHT + 12 }}
+                    className={[styles.summaryBar, crit(s.isCritical) && !r.task.epic && styles.summaryCritical, selected && styles.summarySel, preview && styles.previewBar].filter(Boolean).join(' ')}
+                    style={{ left: g.x, width: Math.max(g.width, 12), top: r.index * ROW_HEIGHT + 12, ...(r.task.epic ? { ['--summary' as string]: r.task.epic.color } : epicColor.get(r.task.id) && !crit(s.isCritical) ? { ['--summary' as string]: epicColor.get(r.task.id) } : {}) }}
                     onClick={() => onSelect(r.task.id)}
                     onPointerDown={(e) => beginDrag(e, r.task.id, 'link')}
                   />
@@ -429,7 +450,7 @@ export function GanttChart({
                     ]
                       .filter(Boolean)
                       .join(' ')}
-                    style={{ left: g.x, width: g.width, top: y }}
+                    style={{ left: g.x, width: g.width, top: y, ...(epicColor.get(r.task.id) && !crit(s.isCritical) && r.task.progress < 100 ? { ['--bar' as string]: epicColor.get(r.task.id) } : {}) }}
                     onClick={() => !drag?.active && onSelect(r.task.id)}
                     onPointerDown={(e) => beginDrag(e, r.task.id, 'move')}
                   >
@@ -469,10 +490,12 @@ export function GanttChart({
   )
 }
 
-function Dot({ row, highlight }: { row: ReturnType<typeof buildOutline>[number]; highlight: boolean }) {
+function Dot({ row, highlight, epicColor }: { row: ReturnType<typeof buildOutline>[number]; highlight: boolean; epicColor?: string }) {
   const s = row.schedule
-  const kind = row.hasChildren ? 'summary' : s.isMilestone ? 'milestone' : highlight && s.isCritical ? 'critical' : highlight && s.isNearCritical ? 'near' : 'task'
-  const color = kind === 'summary' ? 'var(--ink)' : kind === 'milestone' ? 'var(--milestone)' : kind === 'critical' ? 'var(--critical)' : kind === 'near' ? 'var(--critical-bg)' : 'var(--task)'
+  const isSummary = row.hasChildren || Boolean(row.task.epic)
+  const kind = isSummary ? 'summary' : s.isMilestone ? 'milestone' : highlight && s.isCritical ? 'critical' : highlight && s.isNearCritical ? 'near' : 'task'
+  const base = kind === 'summary' ? 'var(--ink)' : kind === 'milestone' ? 'var(--milestone)' : kind === 'critical' ? 'var(--critical)' : kind === 'near' ? 'var(--critical-bg)' : 'var(--task)'
+  const color = epicColor && (kind === 'summary' || kind === 'task') ? epicColor : base
   return (
     <span
       aria-hidden="true"

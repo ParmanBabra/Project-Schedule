@@ -145,6 +145,11 @@ POST   /api/projects/{id}/duplicate
 | TSK-7 | ค้นหา / กรอง | กรองตามชื่อ ผู้รับผิดชอบ เฉพาะ critical เฉพาะยังไม่เสร็จ |
 | TSK-8 | งานย่อย (checklist) | รายการติ๊กในแผงงาน เพิ่ม/แก้/ลบ/ลากเรียง ไม่ใช่งานใน Gantt เมื่อเปิดสวิตช์ % ของงาน = เสร็จ ÷ ทั้งหมด |
 | TSK-9 | สร้างงานต่อจากงานนี้ | เลือกขั้นตอน (ออกแบบ UI, พัฒนา FE/BE, ทดสอบ, UAT, Deploy หรือเพิ่มเอง) ระบบสร้างงานและผูก FS ตามลำดับ ขั้นตอนคู่ขนานเริ่มพร้อมกัน รวมเป็นกลุ่มได้ จำรายการต่อโปรเจกต์ |
+| EPIC-1 | Epic | กลุ่มงานที่มีสี เป้าหมาย เจ้าของ วัน/%/สถานะคำนวณจากงานข้างใน ซ้อนกันได้ตาม WBS |
+| EPIC-2 | สร้าง Epic | 3 ทาง: พิมพ์งานเอง / วางจาก Excel หรือรายการ (Topic → Task, "-" = งานย่อย, สร้างหลาย Epic พร้อมกัน, ชื่อซ้ำ = เติมเข้า Epic เดิม) / เลือกจากงานที่มีอยู่ |
+| EPIC-3 | หน้า Epics | การ์ดละ Epic: สถานะ (ยังไม่เริ่ม/กำลังทำ/เสร็จ/ล่าช้า N งาน) % งานเสร็จ ช่วงวัน ผู้ทำ กรองตามสถานะ กดไป Gantt กรองเฉพาะ Epic |
+| EPIC-4 | แผง Epic | สี เป้าหมาย เจ้าของ ตัวเลขสรุป วันเริ่ม–สิ้นสุด (อ่านอย่างเดียว) รายการงานเรียงขึ้น/ลง เพิ่มงานใน Epic ย้ายงานเข้า ลบ (เก็บงาน/ลบทั้งหมด) |
+| EPIC-5 | จัดงานเข้า Epic | โหมดเลือกหลายงานบน Gantt → รวมเป็น Epic / ย้ายไป Epic / เอาออก · ช่อง "อยู่ใน Epic" ในแผงงาน (+ สร้าง Epic ใหม่แล้วย้ายไป) · Gantt ระบายสีแถวและแถบตาม Epic (critical ยังชมพู) กรองตาม Epic ผ่าน `?epic=` |
 | AUTH-1 | เข้าสู่ระบบ | ผู้ใช้เดียว username/password ตั้งใน config (env หรือ backend/config.json) คุกกี้ session HttpOnly ทุก API ต้องล็อกอิน ยกเว้น health/login/me ออกจากระบบได้จาก header |
 
 API
@@ -539,4 +544,12 @@ GET    /api/settings/defaults          # default ทั้งหมดพร้�
 - **Frontend** `features/auth`: `RequireAuth` ครอบทุก route ใต้ AppShell รอ `/auth/me` แล้วส่งไป `/login` พร้อม `state.from`; `api()` ส่ง `credentials: same-origin` และเรียก listener `onUnauthorized` เมื่อได้ 401 จาก endpoint อื่น (session หมดอายุกลางทาง) · ปุ่มออกจากระบบอยู่ขวาสุดของ header (desktop) และในเมนู ⋯ (มือถือ) ซ่อนเมื่อ `authDisabled`
 - **E2E** backend ของ Playwright รันด้วยล็อกอินเปิด (`e2e`/`e2e-password`) project `setup` ล็อกอินผ่าน API แล้วเก็บ storageState ที่ `frontend/.auth/state.json` ให้ desktop/mobile ใช้ · `login.spec.ts` และหน้าจอ `login*` เริ่มแบบไม่มี session (`noAuth` ใน screens.ts)
 - **Hosting** `mount_spa` เสิร์ฟ `STATIC_DIR` เมื่อมี: `/assets/*` แบบ static, path อื่นที่ไม่ใช่ `/api` ตอบ `index.html` (deep link ได้) ป้องกัน path traversal · `SecurityHeadersMiddleware`, GZip, ปิด `/docs` · Dockerfile หลายขั้น + `docker-compose.yml` + `deploy/Caddyfile` (HTTPS อัตโนมัติ) ดู `docs/deploy.md`
+
+## 15. รายละเอียดที่สรุปตอนพัฒนา (Epic)
+
+- **โมเดล** `task.epic: {color, description, ownerResourceId} | null` งานที่มี `epic` ถือเป็น summary เสมอ (แม้ยังไม่มีลูก: engine ให้ es=ef=0, ระยะ 0, ไม่ใช่ milestone) Epic ว่างจึงเป็นแถวกลุ่มที่รอรับงาน
+- **API** `POST /projects/{id}/epics` `{name,color?,description,ownerResourceId,tasks[{name,duration,checklist[]}],existingTaskIds[],sequential,position:end|after,afterTaskId,parentId}` ไม่ส่ง color จะหยิบสีถัดไปจาก 6 สีมาตรฐานที่ยังไม่ถูกใช้ · `POST /epics/bulk {epics[], linkEpics}` สำหรับวางจาก Excel ชื่อซ้ำ (casefold) เติมงานเข้า Epic เดิม `linkEpics` ผูก FS ระหว่างกลุ่มตามลำดับ · `PATCH /epics/{id}` แก้ชื่อ/สี/คำอธิบาย/เจ้าของ (`clearOwner`) · `POST /epics/{id}/convert` เปลี่ยนงาน/กลุ่มเป็น Epic · `POST /epics/{id}/members {taskIds}` ย้ายงานเข้า (ปฏิเสธการย้ายตัวเอง/กลุ่มแม่) · `PATCH /tasks/{id} {clearEpic:true}` ถอดความเป็น Epic · ลบใช้ `DELETE /tasks/{id}?mode=lift|cascade` เดิม
+- **การแยกวิเคราะห์ที่วาง** อยู่ฝั่งหน้าบ้าน (`features/epics/lib/epics.ts: parsePaste`): บรรทัดที่มี Tab = แถว Excel คอลัมน์ข้อความสุดท้าย = งาน ก่อนหน้า = Epic คอลัมน์แรกที่เป็นตัวเลขถูกข้าม ช่อง Epic ว่าง = Epic ก่อนหน้า บรรทัดขึ้นต้น "-" = งานย่อยของงานบรรทัดบน; ข้อความธรรมดา: บรรทัดไม่เยื้อง = Epic เยื้อง = งาน `(3)` หรือ `| 3` ท้ายชื่อ = ระยะเวลา
+- **สีบน Gantt** `epicColors()` หา Epic ใกล้สุดของทุกงาน แถบงานใช้ `--bar` = สี Epic เว้นเมื่อไฮไลต์ critical (ชมพู) หรือเสร็จแล้ว แถบ Epic เองใช้สี Epic เสมอ จุดหน้าชื่อและป้าย "Epic" ในคอลัมน์ชื่อ กรอง `?epic=<id>` ให้ `buildOutline(project, rootId)` แสดงเฉพาะต้นไม้นั้น
+- **สถานะ Epic** (หน้าบ้าน `epicStats`): late ถ้ามีงานลูกล่าช้า → done ถ้ามีงานและ % = 100 → doing ถ้า % > 0 → todo
 

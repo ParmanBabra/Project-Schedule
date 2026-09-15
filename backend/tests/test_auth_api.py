@@ -21,6 +21,7 @@ def _settings(**over) -> Settings:
         public_origin=None,
         static_dir=None,
         auth_disabled=False,
+        login_max_failures=5,
     )
     base.update(over)
     return Settings(**base)

@@ -40,7 +40,7 @@ export function useProject(id: string | undefined) {
  * Every mutation returns the full ProjectOut; we put it straight into the cache.
  * When `projectId` is given the pre-mutation state is pushed to the undo history.
  */
-function useProjectMutation<TVars>(fn: (vars: TVars) => Promise<ProjectOut>, projectId?: string, track = true) {
+export function useProjectMutation<TVars>(fn: (vars: TVars) => Promise<ProjectOut>, projectId?: string, track = true) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: fn,

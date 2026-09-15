@@ -112,7 +112,7 @@
   position: absolute;
   height: var(--h-bar);
   border-radius: var(--r-pill);
-  background: var(--task);
+  --bar: var(--task); background: var(--bar);
   color: var(--task-text);
   display: flex;
   align-items: center;
@@ -135,12 +135,12 @@
 .barLabel { position: relative; }
 .floatBar { position: absolute; height: var(--h-bar); border: 2px dashed var(--link); border-left: 0; border-radius: 0 var(--r-pill) var(--r-pill) 0; pointer-events: none; }
 
-.summaryBar { position: absolute; height: 10px; background: var(--ink); border-radius: 3px; cursor: pointer; z-index: 2; }
-.summaryBar::before, .summaryBar::after { content: ''; position: absolute; top: 8px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 9px solid var(--ink); }
+.summaryBar { --summary: var(--ink); position: absolute; height: 10px; background: var(--summary); border-radius: 3px; cursor: pointer; z-index: 2; }
+.summaryBar::before, .summaryBar::after { content: ''; position: absolute; top: 8px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 9px solid var(--summary); }
 .summaryBar::before { left: 0; }
 .summaryBar::after { right: 0; }
-.summaryCritical { background: var(--critical); }
-.summaryCritical::before, .summaryCritical::after { border-top-color: var(--critical); }
+.summaryCritical { --summary: var(--critical); }
+
 .summarySel { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary); }
 
 .milestone { position: absolute; width: 16px; height: 16px; background: var(--milestone); border-radius: 4px; transform: rotate(45deg); cursor: pointer; z-index: 2; }
@@ -274,3 +274,19 @@
 
 /* room between the (shorter) current buffer and the promised date */
 .slack { position: absolute; height: 24px; border-bottom: 2px dotted var(--primary-tint); box-sizing: border-box; pointer-events: none; }
+
+/* Epics */
+.epicBadge { font-size: var(--fs-caption); font-weight: var(--fw-medium); color: var(--text-3); background: var(--surface-3); border-radius: var(--r-pill); padding: 1px 8px; margin-left: 6px; flex-shrink: 0; }
+.selectBox { width: 18px; height: 18px; accent-color: var(--primary); margin: 0 4px 0 0; flex-shrink: 0; }
+
+.split { display: inline-flex; align-items: center; }
+.split > button:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.splitCaret { border-top-left-radius: 0; border-bottom-left-radius: 0; padding: 0 8px; margin-left: 1px; min-width: 0; }
+.epicFilter { min-width: 150px; max-width: 220px; }
+.epicFilter select { height: 36px; font-size: var(--fs-label); background: var(--surface); }
+.selSelect { height: 36px; width: 170px; background: rgba(255,255,255,0.12); color: var(--text-on-primary); border-radius: var(--r-pill); font-size: var(--fs-label); }
+.selSelect option { color: var(--text); }
+@media (max-width: 767px) {
+  .split { display: none; }
+  .epicFilter { min-width: 120px; }
+}

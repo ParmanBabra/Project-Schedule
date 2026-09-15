@@ -46,6 +46,7 @@ export default defineConfig({
         AUTH_USERNAME: E2E_CREDENTIALS.username,
         AUTH_PASSWORD: E2E_CREDENTIALS.password,
         SESSION_SECRET: 'e2e-secret',
+        AUTH_MAX_FAILURES: '100000', // the login screens fail on purpose many times per run
         CONFIG_FILE: resolve(here, '.auth/no-config.json'), // never read the developer's real config.json
       },
       timeout: 60_000,

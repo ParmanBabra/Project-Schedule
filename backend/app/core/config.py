@@ -46,6 +46,7 @@ class Settings:
     public_origin: str | None  # e.g. https://plan.example.com – extra CORS origin
     static_dir: Path | None  # built frontend (frontend/dist) served by the API when present
     auth_disabled: bool  # tests/dev only: every request is treated as logged in
+    login_max_failures: int  # wrong passwords per minute per address before 429
 
 
 def _file_config() -> dict[str, object]:
@@ -88,6 +89,7 @@ def settings() -> Settings:
         public_origin=_pick("PUBLIC_ORIGIN", "publicOrigin", cfg, "") or None,
         static_dir=static_dir if static_dir.is_dir() else None,
         auth_disabled=_truthy(_pick("AUTH_DISABLED", "authDisabled", cfg, "false")),
+        login_max_failures=int(_pick("AUTH_MAX_FAILURES", "loginMaxFailures", cfg, "5")),
     )
 
 

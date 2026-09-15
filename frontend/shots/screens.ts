@@ -1,5 +1,5 @@
 import type { APIRequestContext, Page } from '@playwright/test'
-import { seedResources, seedSampleProject } from './seed'
+import { seedEpics, seedResources, seedSampleProject } from './seed'
 
 /**
  * Registry of every screen/state that design review and visual regression cover.
@@ -73,6 +73,23 @@ export const screens: Screen[] = [
       await page.getByTestId('open-chain').click()
       await page.getByTestId('chain-preview').getByText(/โปรเจกต์จะเสร็จ/).waitFor()
     },
+  },
+  {
+    name: 'epics',
+    path: async (r) => `/p/${await seedEpics(r)}/epics`,
+    mockup: { desktop: 'EpicsPage', mobile: 'MobileEpics' },
+  },
+  {
+    name: 'gantt-epic',
+    path: async (r) => { const pid = await seedEpics(r); return `/p/${pid}/gantt` },
+    mockup: { desktop: 'GanttEpic' },
+    setup: async (page) => { await page.getByRole('button', { name: /^Picking list/ }).first().click(); await page.getByTestId('epic-panel').waitFor() },
+  },
+  {
+    name: 'create-epic',
+    path: async (r) => `/p/${await seedEpics(r)}/epics`,
+    mockup: { desktop: 'CreateEpic' },
+    setup: async (page) => { await page.getByRole('button', { name: 'สร้าง Epic' }).first().click(); const d = page.getByRole('dialog', { name: 'สร้าง Epic' }); await d.getByLabel('ชื่อ Epic').fill('Interface Automated WH'); for (const [i, n] of ['Create Task', 'Update Task', 'Delete Task'].entries()) { await d.getByLabel(`ชื่องานที่ ${i + 1}`).fill(n); if (i < 2) await d.getByLabel(`ชื่องานที่ ${i + 1}`).press('Enter') } },
   },
   { name: 'gantt-task-list', path: gantt, setup: async (page) => { await page.getByRole('button', { name: 'รายการงาน' }).click() } },
   {

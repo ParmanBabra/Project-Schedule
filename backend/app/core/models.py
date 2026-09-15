@@ -67,6 +67,15 @@ class ChainStep(CamelModel):
     parallel: bool = False  # starts together with the previous step (SS) instead of after it
 
 
+class EpicInfo(CamelModel):
+    """Marks a group task as an Epic (docs/features.md EPIC-1): a theme with its own colour,
+    goal and owner. Dates / progress still roll up from the tasks inside."""
+
+    color: str = Field(default="#6a4fd8", pattern=r"^#[0-9a-fA-F]{6}$")
+    description: str = Field(default="", max_length=2000)
+    owner_resource_id: str | None = None
+
+
 class Task(CamelModel):
     id: str
     name: str = Field(min_length=1, max_length=200)
@@ -80,7 +89,8 @@ class Task(CamelModel):
     order: int = 0
     estimate: Estimate | None = None
     checklist: list[ChecklistItem] = Field(default_factory=list)
-    progress_from_checklist: bool = True  # when checklist is non-empty: progress = done / total
+    progress_from_checklist: bool = True
+    epic: EpicInfo | None = None  # set => this task is an Epic (always a summary row)
 
 
 class Dependency(CamelModel):

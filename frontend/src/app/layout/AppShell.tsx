@@ -1,4 +1,4 @@
-import { Calendar, ChevronDown, FolderKanban, GanttChartSquare, LogOut, MoreHorizontal, Settings, Users } from 'lucide-react'
+import { Calendar, ChevronDown, FolderKanban, GanttChartSquare, Layers, LogOut, MoreHorizontal, Settings, Users } from 'lucide-react'
 import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom'
 import { useLogout, useMe } from '@/features/auth/api'
 import { useProject, useProjects } from '@/features/projects/api'
@@ -34,6 +34,7 @@ export function AppShell() {
                 ? [
                     { label: 'Gantt', icon: <GanttChartSquare size={16} />, onSelect: () => navigate(`/p/${projectId}/gantt`) },
                     { label: 'ปฏิทิน', icon: <Calendar size={16} />, onSelect: () => navigate(`/p/${projectId}/calendar`) },
+                    { label: 'Epics', icon: <Layers size={16} />, onSelect: () => navigate(`/p/${projectId}/epics`) },
                     { label: 'ทรัพยากร', icon: <Users size={16} />, onSelect: () => navigate('/resources') },
                     { label: 'ตั้งค่า', icon: <Settings size={16} />, onSelect: () => navigate(`/p/${projectId}/settings`) },
                     { label: 'โปรเจกต์ทั้งหมด', icon: <FolderKanban size={16} />, onSelect: () => navigate('/') },
@@ -57,6 +58,7 @@ export function AppShell() {
             <>
               <Tab to={`/p/${projectId}/gantt`} icon={<GanttChartSquare size={18} />} label="Gantt" />
               <Tab to={`/p/${projectId}/calendar`} icon={<Calendar size={18} />} label="ปฏิทิน" />
+              <Tab to={`/p/${projectId}/epics`} icon={<Layers size={18} />} label="Epics" />
               <Tab to="/resources" icon={<Users size={18} />} label="ทรัพยากร" />
               <Tab to={`/p/${projectId}/settings`} icon={<Settings size={18} />} label="ตั้งค่า" />
             </>

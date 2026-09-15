@@ -67,10 +67,10 @@ class LoginThrottle:
             self._failures.pop(key, None)
         return recent
 
-    def blocked(self, key: str, now: float | None = None) -> bool:
+    def blocked(self, key: str, now: float | None = None, limit: int = MAX_FAILURES) -> bool:
         now = now if now is not None else time.time()
         with self._lock:
-            return len(self._prune(key, now)) >= MAX_FAILURES
+            return len(self._prune(key, now)) >= limit
 
     def record_failure(self, key: str, now: float | None = None) -> None:
         now = now if now is not None else time.time()

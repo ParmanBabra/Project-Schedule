@@ -1,7 +1,7 @@
 import type { ProjectOut, Task, TaskSchedule } from '@/features/projects/types'
 
 function task(id: string, name: string, duration: number, order: number, extra: Partial<Task> = {}): Task {
-  return { id, name, duration, progress: 0, isMilestone: false, constraint: null, color: null, parentId: null, collapsed: false, order, estimate: null, checklist: [], progressFromChecklist: true, ...extra }
+  return { id, name, duration, progress: 0, isMilestone: false, constraint: null, color: null, parentId: null, collapsed: false, order, estimate: null, checklist: [], progressFromChecklist: true, epic: null, ...extra }
 }
 
 function sched(id: string, wbs: string, start: string, end: string, extra: Partial<TaskSchedule> = {}): TaskSchedule {

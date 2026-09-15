@@ -43,7 +43,7 @@ def _client_key(request: Request) -> str:
 def login(body: LoginBody, request: Request, response: Response) -> MeOut:
     cfg = settings()
     key = _client_key(request)
-    if service.throttle.blocked(key):
+    if service.throttle.blocked(key, limit=cfg.login_max_failures):
         raise TooManyAttempts("ลองผิดหลายครั้งเกินไป รอ 1 นาทีแล้วลองใหม่")
     if not service.check_credentials(cfg, body.username, body.password):
         service.throttle.record_failure(key)

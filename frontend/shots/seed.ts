@@ -1,12 +1,47 @@
 import type { APIRequestContext } from '@playwright/test'
+import { mkdirSync, rmSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const SAMPLE_NAME = 'ระบบจองห้องประชุม (ตัวอย่าง)'
+const LOCK_DIR = resolve(fileURLToPath(new URL('.', import.meta.url)), '../.auth/locks')
+
+/**
+ * Cross-process mutex: Playwright runs desktop and mobile in separate workers, and both
+ * may try to seed the same shared project at once. `mkdirSync` is atomic on every OS.
+ */
+async function withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  mkdirSync(LOCK_DIR, { recursive: true })
+  const dir = resolve(LOCK_DIR, encodeURIComponent(key))
+  const started = Date.now()
+  for (;;) {
+    try {
+      mkdirSync(dir)
+      break
+    } catch {
+      if (Date.now() - started > 15_000) { // seeding takes ~2 s; anything longer is a leftover
+        rmSync(dir, { recursive: true, force: true }) // stale lock from a crashed run
+        continue
+      }
+      await new Promise((r) => setTimeout(r, 100))
+    }
+  }
+  try {
+    return await fn()
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
 
 /**
  * Creates (once) the documented sample project through the API and returns its id.
  * Used by screenshot capture and visual regression so screens show real data.
  */
-export async function seedSampleProject(request: APIRequestContext, name: string = SAMPLE_NAME, opts: { assignments?: boolean } = {}): Promise<string> {
+export function seedSampleProject(request: APIRequestContext, name: string = SAMPLE_NAME, opts: { assignments?: boolean } = {}): Promise<string> {
+  return withLock(`project:${name}`, () => seedSampleProjectUnlocked(request, name, opts))
+}
+
+async function seedSampleProjectUnlocked(request: APIRequestContext, name: string, opts: { assignments?: boolean }): Promise<string> {
   const withAssignments = opts.assignments ?? true
   const resourceSuffix = name === SAMPLE_NAME ? '' : ` (${name.replace(/^E2E /, '')})`
   const list = (await (await request.get('/api/projects')).json()) as Array<{ id: string; name: string; taskCount: number }>
@@ -73,7 +108,11 @@ const RESOURCES: Array<{ name: string; type: 'person' | 'equipment'; color: stri
 ]
 
 /** Creates the shared sample resources once; returns name -> id. */
-export async function seedResources(request: APIRequestContext, suffix = ''): Promise<Record<string, string>> {
+export function seedResources(request: APIRequestContext, suffix = ''): Promise<Record<string, string>> {
+  return withLock(`resources:${suffix}`, () => seedResourcesUnlocked(request, suffix))
+}
+
+async function seedResourcesUnlocked(request: APIRequestContext, suffix: string): Promise<Record<string, string>> {
   const existing = (await (await request.get('/api/resources')).json()) as Array<{ id: string; name: string }>
   const out: Record<string, string> = {}
   for (const r of RESOURCES) {
@@ -86,4 +125,33 @@ export async function seedResources(request: APIRequestContext, suffix = ''): Pr
     }
   }
   return out
+}
+
+/** A project with three Epics (matches the design mockups); reused across runs. */
+export function seedEpics(request: APIRequestContext, name = 'ระบบ WMS (Epics)'): Promise<string> {
+  return withLock(`project:${name}`, () => seedEpicsUnlocked(request, name))
+}
+
+async function seedEpicsUnlocked(request: APIRequestContext, name: string): Promise<string> {
+  const list = (await (await request.get('/api/projects')).json()) as Array<{ id: string; name: string }>
+  const existing = list.find((p) => p.name === name)
+  if (existing) return existing.id
+  const project = await (await request.post('/api/projects', { data: { name, startDate: '2026-09-14' } })).json()
+  const pid = project.id as string
+  await request.post(`/api/projects/${pid}/epics/bulk`, {
+    data: {
+      linkEpics: true,
+      epics: [
+        { name: 'Visualization', color: '#6a4fd8', description: 'แผนที่สต๊อก รายงานตำแหน่ง และ dashboard งาน', tasks: [{ name: 'Stock visualization and Editor (Map)', duration: 4 }, { name: 'Report Stock Location', duration: 3 }, { name: 'Dashboard (confirm job / Delay)', duration: 2 }] },
+        { name: 'Picking list', color: '#e0457b', description: 'พนักงานหยิบสินค้าตาม picking list บนมือถือ ยืนยันแล้วส่งผลกลับ LMS', tasks: [{ name: 'Picking list', duration: 3 }, { name: 'Plant Route (Mobile)', duration: 5 }, { name: 'Confirm', duration: 2 }, { name: 'Import LMS', duration: 3 }, { name: 'Import Due list', duration: 2 }] },
+        { name: 'Master for Standalone (Juno)', color: '#f28c28', description: 'Integration module และ master data', tasks: [{ name: 'Integration Module ERP/Other legacy', duration: 5 }, { name: 'Master Data (Cost center, Storage)', duration: 4, checklist: ['Create', 'Edit', 'Upload Manual (Validate)', 'Display', 'Export Excel'] }] },
+      ],
+    },
+  })
+  // some progress so the cards differ
+  const p = await (await request.get(`/api/projects/${pid}`)).json()
+  const byName = Object.fromEntries(p.tasks.map((t: { name: string; id: string }) => [t.name, t.id]))
+  await request.patch(`/api/projects/${pid}/tasks/${byName['Stock visualization and Editor (Map)']}`, { data: { progress: 100 } })
+  await request.patch(`/api/projects/${pid}/tasks/${byName['Report Stock Location']}`, { data: { progress: 60 } })
+  return pid
 }
