@@ -58,7 +58,7 @@ const project = {
     },
     criticalPath: ['a'],
     summary: { taskCount: 3, criticalCount: 1, nearCriticalCount: 0, progress: 0, chainDays: 8, plannedEnd: '2026-09-23', committedEnd: '2026-10-05', lateCount: 0, baselinePlannedEnd: null },
-    buffer: { method: 'ccpm', chainDays: 8, days: 4, start: '2026-09-23', end: '2026-09-29', managementReserveDays: 1, managementReserveEnd: '2026-09-30', percentUsed: 50, note: null, consumedPercent: null, status: null, chainProgress: 0, consumedDays: null, aheadDays: 0, paddingWarning: false, paddingNote: null },
+    buffer: { method: 'ccpm', chainDays: 8, days: 4, start: '2026-09-23', end: '2026-09-29', committedEnd: '2026-09-29', managementReserveDays: 1, managementReserveEnd: '2026-09-30', percentUsed: 50, note: null, consumedPercent: null, status: null, chainProgress: 0, consumedDays: null, aheadDays: 0, paddingWarning: false, paddingNote: null },
   },
 } satisfies ProjectOut
 

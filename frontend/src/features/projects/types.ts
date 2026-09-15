@@ -123,6 +123,7 @@ export interface BufferResult {
   days: number
   start: string | null
   end: string | null
+  committedEnd: string | null
   managementReserveDays: number
   managementReserveEnd: string | null
   percentUsed: number | null

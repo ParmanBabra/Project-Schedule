@@ -484,7 +484,8 @@ def compute_schedule(project: Project, today: date | None = None) -> Schedule:
         slip = cal.count_working_days(base_end, planned_end) - 1 if planned_end > base_end else 0
         consumed = max(0, slip)
         buffer.consumed_days = consumed
-        buffer.consumed_percent = min(999, int(round(consumed * 100 / buffer.days)))
+        ref_days = project.baseline.buffer_days or buffer.days
+        buffer.consumed_percent = min(999, int(round(consumed * 100 / ref_days)))
         z = project.rules.buffer_zones
         ratio = buffer.consumed_percent / max(chain_progress, 1) * 100
         if buffer.consumed_percent >= 100 or ratio > z.red:
@@ -500,7 +501,7 @@ def compute_schedule(project: Project, today: date | None = None) -> Schedule:
         progress=rolled_progress(leaves_all),
         chain_days=project_end,
         planned_end=planned_end,
-        committed_end=buffer.end,
+        committed_end=buffer.committed_end,
         late_count=sum(1 for nid in leaves_all if out[nid].health == "late"),
         baseline_planned_end=project.baseline.planned_end if project.baseline else None,
     )
@@ -606,16 +607,16 @@ def compute_buffer(
     boundary = project_end
     start_day: date | None = cal.day(project_end - 1) if project_end > 0 else None
     ahead_days = 0
+    committed_end: date | None = None
     if project.baseline is not None and project.baseline.buffer_days > 0:
-        # size and committed end are frozen at the baseline; the bar itself is drawn from the
-        # CURRENT planned end, so finishing early shows more room and slipping shows less
-        days = project.baseline.buffer_days
-        boundary = cal.index_of(project.baseline.planned_end) + 1
-        committed_idx = boundary + days - 1
-        cur_end_idx = project_end - 1
-        if cur_end_idx < boundary - 1:
-            ahead_days = (boundary - 1) - cur_end_idx
-        start_day = cal.day(min(cur_end_idx, committed_idx)) if project_end > 0 else None
+        # The buffer itself always follows the current plan (size from the current chain, drawn
+        # right after the last task). What the baseline freezes is the COMMITTED date: the
+        # promise made when the baseline was saved. Finishing earlier than the baseline shows
+        # as "ahead"; slipping past it consumes the (baseline-sized) buffer.
+        base_boundary = cal.index_of(project.baseline.planned_end) + 1
+        committed_end = cal.day(base_boundary + project.baseline.buffer_days - 1)
+        if project_end - 1 < base_boundary - 1:
+            ahead_days = (base_boundary - 1) - (project_end - 1)
     end = cal.day(boundary + days - 1) if boundary + days > 0 and days > 0 else None
     mr_end = cal.day(boundary + days + mr_days - 1) if mr_days and end is not None else None
     if chain == 0:
@@ -632,6 +633,7 @@ def compute_buffer(
         percent_used=percent_used,
         note=note,
         ahead_days=ahead_days,
+        committed_end=committed_end or end,
     )
 
 

@@ -271,3 +271,6 @@
 @media (max-width: 1023px) and (min-width: 768px) {
   .withPanel { padding-right: 360px; }
 }
+
+/* room between the (shorter) current buffer and the promised date */
+.slack { position: absolute; height: 24px; border-bottom: 2px dotted var(--primary-tint); box-sizing: border-box; pointer-events: none; }

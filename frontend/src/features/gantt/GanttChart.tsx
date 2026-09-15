@@ -495,6 +495,8 @@ function BufferRow({ project, axis, rowIdx, schedule }: { project: ProjectOut; a
   if (!planned || !b.end) return null
   const x1 = xOfDayEnd(axis, planned)
   const x2 = xOfDayEnd(axis, b.end)
+  const committed = b.committedEnd ?? b.end
+  const xc = xOfDayEnd(axis, committed)
   const top = rowIdx * ROW_HEIGHT + (ROW_HEIGHT - BAR_HEIGHT) / 2
   const consumed = b.consumedPercent ?? 0
   const mrX2 = b.managementReserveEnd ? xOfDayEnd(axis, b.managementReserveEnd) : null
@@ -502,16 +504,18 @@ function BufferRow({ project, axis, rowIdx, schedule }: { project: ProjectOut; a
   const usage = b.aheadDays > 0 ? ` · ล่วงหน้า ${b.aheadDays} วัน` : b.consumedPercent !== null ? ` · ใช้ไป ${b.consumedPercent}%` : ''
   const label = `เผื่อ ${b.days} วัน${usage}${isPreview ? ' (ตัวอย่าง)' : ''}`
   const status = b.status
+  const gapEnd = Math.max(x2, xc) // the promise diamond never moves; the buffer bar follows the plan
   return (
     <>
       <div className={[styles.buffer, status === 'red' && styles.bufferRed, status === 'yellow' && styles.bufferYellow].filter(Boolean).join(' ')} style={{ left: x1, width: Math.max(x2 - x1 - 14, 8), top }} data-testid="buffer-bar" title={label}>
         <span className={styles.bufferUsed} style={{ width: `${Math.min(100, consumed)}%` }} />
         {x2 - x1 > 110 && <span className={styles.bufferLabel}>{label}</span>}
       </div>
-      <span className={styles.deliver} style={{ left: x2 - 8, top: rowIdx * ROW_HEIGHT + 14 }} title={`สัญญาส่ง ${formatThai(b.end, { year: true })}`} />
-      {mrX2 !== null && mrX2 > x2 + 12 && <span className={styles.reserve} style={{ left: x2 + 12, width: mrX2 - x2 - 12, top }} title={`เผื่อฉุกเฉิน ${b.managementReserveDays} วัน`} />}
-      <span className={styles.deliverLabel} style={{ left: (mrX2 ?? x2) + 14, top: rowIdx * ROW_HEIGHT + 13 }}>
-        สัญญาส่ง {formatThai(b.end)}
+      {xc > x2 + 12 && <span className={styles.slack} style={{ left: x2, width: xc - x2 - 8, top }} title={`ล่วงหน้า ${b.aheadDays} วัน ก่อนวันสัญญาส่ง`} data-testid="buffer-slack" />}
+      <span className={styles.deliver} style={{ left: xc - 8, top: rowIdx * ROW_HEIGHT + 14 }} title={`สัญญาส่ง ${formatThai(committed, { year: true })}${committed !== b.end ? ' (ล็อกตอนบันทึก baseline)' : ''}`} />
+      {mrX2 !== null && mrX2 > gapEnd + 12 && <span className={styles.reserve} style={{ left: gapEnd + 12, width: mrX2 - gapEnd - 12, top }} title={`เผื่อฉุกเฉิน ${b.managementReserveDays} วัน`} />}
+      <span className={styles.deliverLabel} style={{ left: (mrX2 && mrX2 > gapEnd + 12 ? mrX2 : gapEnd) + 14, top: rowIdx * ROW_HEIGHT + 13 }}>
+        สัญญาส่ง {formatThai(committed)}
         {b.managementReserveDays > 0 ? ` · เผื่อฉุกเฉิน ${b.managementReserveDays} วัน` : ''}
       </span>
     </>

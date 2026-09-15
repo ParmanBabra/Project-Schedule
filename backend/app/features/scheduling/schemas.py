@@ -37,6 +37,7 @@ class BufferResult(CamelModel):
     days: int
     start: date | None = None  # last planned day before the buffer (baseline end when frozen)
     end: date | None
+    committed_end: date | None = None  # promised date (frozen at baseline; = end otherwise)
     management_reserve_days: int
     management_reserve_end: date | None
     percent_used: int | None = None
