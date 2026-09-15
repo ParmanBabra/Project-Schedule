@@ -23,6 +23,42 @@
   ],
   "artboards": [
     {
+      "file": "TopicEntry.dc.html",
+      "title": "Desktop · จุดเข้า: ปุ่มเพิ่มงานแบบแยก",
+      "x": 0,
+      "y": 2000,
+      "w": 560,
+      "h": 420,
+      "page": "tasks"
+    },
+    {
+      "file": "TopicDialog.dc.html",
+      "title": "Desktop · เพิ่มหัวข้อ (พิมพ์เอง)",
+      "x": 660,
+      "y": 2000,
+      "w": 880,
+      "h": 760,
+      "page": "tasks"
+    },
+    {
+      "file": "TopicPaste.dc.html",
+      "title": "Desktop · เพิ่มหัวข้อ (วางจาก Excel)",
+      "x": 660,
+      "y": 2900,
+      "w": 880,
+      "h": 900,
+      "page": "tasks"
+    },
+    {
+      "file": "MobileTopic.dc.html",
+      "title": "มือถือ · เพิ่มหัวข้อ",
+      "x": 0,
+      "y": 2560,
+      "w": 390,
+      "h": 844,
+      "page": "tasks"
+    },
+    {
       "file": "TaskChecklist.dc.html",
       "title": "Desktop · แผงงาน: งานย่อย (checklist)",
       "x": 0,
