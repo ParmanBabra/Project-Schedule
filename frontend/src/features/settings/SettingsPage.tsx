@@ -232,6 +232,11 @@ function SettingsForm({ project, methods, rules, mrHelp }: { project: ProjectOut
               <span className={styles.crumb}>
                 เสร็จตามแผนตอนนั้น {formatThai(project.baseline.plannedEnd)} · เผื่อ {project.baseline.bufferDays} วัน (คงที่จนกว่าจะบันทึกใหม่)
               </span>
+              {Math.abs(project.schedule.summary.chainDays - project.baseline.chainDays) * 4 > project.baseline.chainDays && (
+                <span className={styles.paddingWarn} role="note" data-testid="baseline-drift" style={{ flexBasis: '100%' }}>
+                  แผนเปลี่ยนไปมากตั้งแต่บันทึก baseline: สายงานหลักตอนนั้น {project.baseline.chainDays} วัน ตอนนี้ {project.schedule.summary.chainDays} วัน แต่เวลาเผื่อยังล็อกที่ {project.baseline.bufferDays} วัน ถ้าแผนใหม่นี้คือแผนจริง ให้กด "บันทึกใหม่จากแผนปัจจุบัน" เพื่อคำนวณเผื่อใหม่
+                </span>
+              )}
               <span className={styles.spacer} />
               <Button size="sm" onClick={() => saveBaseline.mutate(undefined, { onSuccess: () => toast.success('บันทึก baseline ใหม่แล้ว'), onError: failed })}>
                 บันทึกใหม่จากแผนปัจจุบัน

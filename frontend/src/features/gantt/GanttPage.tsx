@@ -1,4 +1,4 @@
-import { CalendarDays, Flag, List, Plus, Redo2, Undo2 } from 'lucide-react'
+import { CalendarDays, Flag, List, Lock, Plus, Redo2, Undo2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useParams, useSearchParams } from 'react-router-dom'
@@ -286,11 +286,12 @@ export function GanttPage() {
                   tone={b.status === 'red' ? 'critical' : b.status === 'yellow' ? 'warn' : 'green'}
                   data-testid="chip-buffer"
                   title={
-                    b.status
-                      ? `ใช้เผื่อไป ${b.consumedPercent}% ขณะที่งานหลักคืบหน้า ${b.chainProgress}% · ${b.status === 'green' ? 'ยังปลอดภัย' : b.status === 'yellow' ? 'จับตา' : 'ต้องแก้'}`
-                      : 'บันทึก baseline เพื่อเริ่มติดตามการใช้เวลาเผื่อ'
+                    p.baseline && p.baseline.bufferDays > 0
+                      ? `ขนาดเผื่อล็อกไว้ตอนบันทึก baseline (สายงานหลักตอนนั้น ${p.baseline.chainDays} วัน ตอนนี้ ${s.chainDays} วัน) จึงไม่เปลี่ยนตามงาน · ถ้าต้องการคำนวณใหม่ ให้บันทึก baseline ใหม่ในหน้าตั้งค่า${b.status ? ` · ใช้เผื่อไป ${b.consumedPercent}% ขณะที่งานหลักคืบหน้า ${b.chainProgress}%` : ''}`
+                      : 'เผื่อคำนวณจากสายงานหลักปัจจุบัน · บันทึก baseline เพื่อล็อกและเริ่มติดตามการใช้เวลาเผื่อ'
                   }
                 >
+                  {p.baseline && p.baseline.bufferDays > 0 && <Lock size={12} aria-label="ล็อกที่ baseline" />}
                   เผื่อ {b.days} วัน{b.consumedPercent !== null ? ` · ใช้ไป ${b.consumedPercent}%` : ''}
                 </Chip>
               )}

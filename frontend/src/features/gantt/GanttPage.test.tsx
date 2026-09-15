@@ -38,6 +38,18 @@ describe('GanttPage', () => {
     expect(screen.getByText('สำรองเวลาโครงการ')).toBeInTheDocument()
   })
 
+  it('marks the buffer chip as locked once a baseline exists and explains why', async () => {
+    const p = sampleProject()
+    p.baseline = { savedAt: '2026-09-15T04:31:25Z', plannedEnd: '2026-10-28', chainDays: 42, bufferDays: 21, tasks: {} }
+    p.schedule.buffer.days = 21
+    vi.stubGlobal('fetch', vi.fn(mockFetch({ 'GET /projects/prj_sample': () => p })))
+    renderGantt()
+    const chip = await screen.findByTestId('chip-buffer')
+    expect(chip).toHaveTextContent('เผื่อ 21 วัน')
+    expect(within(chip).getByLabelText('ล็อกที่ baseline')).toBeInTheDocument()
+    expect(chip.getAttribute('title')).toContain('ตอนนั้น 42 วัน ตอนนี้ 17 วัน')
+  })
+
   it('selecting a bar writes ?task= and highlights the row', async () => {
     vi.stubGlobal('fetch', vi.fn(mockFetch({ 'GET /projects/prj_sample': () => sampleProject() })))
     renderGantt()
