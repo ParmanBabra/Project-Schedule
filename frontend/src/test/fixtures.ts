@@ -84,7 +84,7 @@ export function sampleProject(): ProjectOut {
       },
       criticalPath: ['t1', 't2', 't4', 't6'],
       summary: { taskCount: 6, criticalCount: 4, nearCriticalCount: 0, progress: 32, chainDays: 17, plannedEnd: '2026-10-06', committedEnd: '2026-10-19', lateCount: 0, baselinePlannedEnd: null },
-      buffer: { method: 'ccpm', chainDays: 17, days: 9, start: '2026-10-06', end: '2026-10-19', managementReserveDays: 1, managementReserveEnd: '2026-10-20', percentUsed: 50, note: null, consumedPercent: null, status: null, chainProgress: 32, consumedDays: null, paddingWarning: false, paddingNote: null },
+      buffer: { method: 'ccpm', chainDays: 17, days: 9, start: '2026-10-06', end: '2026-10-19', managementReserveDays: 1, managementReserveEnd: '2026-10-20', percentUsed: 50, note: null, consumedPercent: null, status: null, chainProgress: 32, consumedDays: null, aheadDays: 0, paddingWarning: false, paddingNote: null },
     },
   }
 }

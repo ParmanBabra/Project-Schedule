@@ -45,6 +45,7 @@ class BufferResult(CamelModel):
     status: str | None = None  # green | yellow | red
     chain_progress: int = 0
     consumed_days: int | None = None
+    ahead_days: int = 0  # working days the current plan finishes before the baseline end
     padding_warning: bool = False  # BUF-7: estimates look padded while using ccpm
     padding_note: str | None = None
 

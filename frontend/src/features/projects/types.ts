@@ -131,6 +131,7 @@ export interface BufferResult {
   status: 'green' | 'yellow' | 'red' | null
   chainProgress: number
   consumedDays: number | null
+  aheadDays: number
   paddingWarning: boolean
   paddingNote: string | null
 }

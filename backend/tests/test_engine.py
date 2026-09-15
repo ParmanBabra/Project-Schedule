@@ -335,6 +335,16 @@ def test_buffer_consumption_and_fever_zones_after_baseline():
     s = compute_schedule(p)
     assert s.buffer.consumed_days == 0 and s.buffer.consumed_percent == 0
     assert s.buffer.status == "green" and s.summary.baseline_planned_end == D(2026, 10, 6)
+    committed = s.buffer.end
+    assert s.buffer.start == D(2026, 10, 6) and s.buffer.ahead_days == 0
+
+    # finishing early: the committed date stays, the bar starts at the new (earlier) end
+    p.tasks[3].duration = 1  # พัฒนา Backend 6 -> 1
+    early = compute_schedule(p)
+    assert early.buffer.end == committed and early.buffer.days == base.buffer.days
+    assert early.buffer.start == early.summary.planned_end < D(2026, 10, 6)
+    assert early.buffer.ahead_days == 2 and early.buffer.consumed_percent == 0  # Frontend path now critical (15 vs 17)
+    p.tasks[3].duration = 6
 
     # slip the critical chain by 3 working days: consumed 3/9 = 33%, chain progress ~? -> compare
     p.tasks[3].duration = 9  # พัฒนา Backend 6 -> 9
@@ -349,8 +359,9 @@ def test_buffer_consumption_and_fever_zones_after_baseline():
     assert compute_schedule(p).buffer.status == "yellow"
 
     p.tasks[3].duration = 20  # eat the whole buffer
-    assert compute_schedule(p).buffer.consumed_percent >= 100
-    assert compute_schedule(p).buffer.status == "red"
+    over = compute_schedule(p)
+    assert over.buffer.consumed_percent >= 100 and over.buffer.status == "red"
+    assert over.buffer.start == over.buffer.end == committed  # nothing left to draw
 
 
 def test_health_baseline_mode_uses_frozen_dates():

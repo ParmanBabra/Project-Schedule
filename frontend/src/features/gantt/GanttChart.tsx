@@ -499,7 +499,8 @@ function BufferRow({ project, axis, rowIdx, schedule }: { project: ProjectOut; a
   const consumed = b.consumedPercent ?? 0
   const mrX2 = b.managementReserveEnd ? xOfDayEnd(axis, b.managementReserveEnd) : null
   const isPreview = project.schedule.buffer.end !== b.end || project.schedule.buffer.days !== b.days
-  const label = `เผื่อ ${b.days} วัน${b.consumedPercent !== null ? ` · ใช้ไป ${b.consumedPercent}%` : ''}${isPreview ? ' (ตัวอย่าง)' : ''}`
+  const usage = b.aheadDays > 0 ? ` · ล่วงหน้า ${b.aheadDays} วัน` : b.consumedPercent !== null ? ` · ใช้ไป ${b.consumedPercent}%` : ''
+  const label = `เผื่อ ${b.days} วัน${usage}${isPreview ? ' (ตัวอย่าง)' : ''}`
   const status = b.status
   return (
     <>

@@ -292,7 +292,7 @@ export function GanttPage() {
                   }
                 >
                   {p.baseline && p.baseline.bufferDays > 0 && <Lock size={12} aria-label="ล็อกที่ baseline" />}
-                  เผื่อ {b.days} วัน{b.consumedPercent !== null ? ` · ใช้ไป ${b.consumedPercent}%` : ''}
+                  เผื่อ {b.days} วัน{b.aheadDays > 0 ? ` · ล่วงหน้า ${b.aheadDays} วัน` : b.consumedPercent !== null ? ` · ใช้ไป ${b.consumedPercent}%` : ''}
                 </Chip>
               )}
               {!p.baseline && (

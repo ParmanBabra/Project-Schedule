@@ -605,10 +605,17 @@ def compute_buffer(
     # the buffer starts where the plan ends; once a baseline exists it is frozen there
     boundary = project_end
     start_day: date | None = cal.day(project_end - 1) if project_end > 0 else None
+    ahead_days = 0
     if project.baseline is not None and project.baseline.buffer_days > 0:
+        # size and committed end are frozen at the baseline; the bar itself is drawn from the
+        # CURRENT planned end, so finishing early shows more room and slipping shows less
         days = project.baseline.buffer_days
         boundary = cal.index_of(project.baseline.planned_end) + 1
-        start_day = project.baseline.planned_end
+        committed_idx = boundary + days - 1
+        cur_end_idx = project_end - 1
+        if cur_end_idx < boundary - 1:
+            ahead_days = (boundary - 1) - cur_end_idx
+        start_day = cal.day(min(cur_end_idx, committed_idx)) if project_end > 0 else None
     end = cal.day(boundary + days - 1) if boundary + days > 0 and days > 0 else None
     mr_end = cal.day(boundary + days + mr_days - 1) if mr_days and end is not None else None
     if chain == 0:
@@ -624,6 +631,7 @@ def compute_buffer(
         management_reserve_end=mr_end,
         percent_used=percent_used,
         note=note,
+        ahead_days=ahead_days,
     )
 
 
