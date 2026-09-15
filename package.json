@@ -12,7 +12,8 @@
     "test:e2e": "cd frontend && npm run test:e2e",
     "lint": "cd backend && .venv\\Scripts\\python.exe -m ruff check . && cd ../frontend && npm run lint",
     "build": "cd frontend && npm run build",
-    "start": "cd backend && .venv\\Scripts\\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    "start": "cd backend && .venv\\Scripts\\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips=*",
+    "tunnel": "ngrok http 8000"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

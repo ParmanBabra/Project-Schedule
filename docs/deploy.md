@@ -30,6 +30,19 @@ npm run start          # http://0.0.0.0:8000 ให้บริการทั�
 
 ตั้ง reverse proxy (nginx/Caddy/IIS) ให้ส่ง HTTPS มาที่พอร์ต 8000 และตั้ง `cookieSecure: true`
 
+## 2.1 เปิดให้คนนอกเข้าชั่วคราวด้วย ngrok
+
+ไม่ต้องมีเซิร์ฟเวอร์หรือโดเมน เหมาะกับการให้คนอื่นดู/ใช้ชั่วคราว (ต้องติดตั้ง ngrok และ `ngrok config add-authtoken <token>` ครั้งแรก)
+
+```bash
+npm run build                 # ครั้งแรก หรือเมื่อแก้ frontend
+set COOKIE_SECURE=true        # PowerShell: $env:COOKIE_SECURE="true"  (ngrok เป็น HTTPS)
+npm run start                 # API + เว็บ ที่ 127.0.0.1:8000 อ่าน IP จริงจาก header ของ ngrok
+npm run tunnel                # เทอร์มินัลที่ 2: ได้ URL https://xxxx.ngrok-free.app
+```
+
+ใช้ URL จาก ngrok ได้เลย ล็อกอินด้วยบัญชีใน config เหมือนเดิม ไม่ต้องตั้ง `PUBLIC_ORIGIN` เพราะเว็บกับ API อยู่ origin เดียวกัน ถ้าใช้ free plan URL จะเปลี่ยนทุกครั้งที่เปิดใหม่ (ใช้ `ngrok http 8000 --domain=<ชื่อคงที่>` เมื่อมี static domain)
+
 ## 3. Docker + HTTPS อัตโนมัติ (แนะนำสำหรับ VPS)
 
 ต้องมี: โดเมนชี้ A record มาที่เครื่อง, เปิดพอร์ต 80/443, ติดตั้ง Docker
