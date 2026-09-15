@@ -1,6 +1,10 @@
 {
   "pages": [
     {
+      "id": "epics",
+      "name": "Epics"
+    },
+    {
       "id": "tasks",
       "name": "งานย่อย + งานต่อเนื่อง"
     },
@@ -22,6 +26,42 @@
     }
   ],
   "artboards": [
+    {
+      "file": "EpicsPage.dc.html",
+      "title": "Desktop · หน้า Epics",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 720,
+      "page": "epics"
+    },
+    {
+      "file": "GanttEpic.dc.html",
+      "title": "Desktop · Gantt สี Epic + แผง Epic",
+      "x": 0,
+      "y": 860,
+      "w": 1280,
+      "h": 620,
+      "page": "epics"
+    },
+    {
+      "file": "CreateEpic.dc.html",
+      "title": "Desktop · สร้าง Epic",
+      "x": 1380,
+      "y": 0,
+      "w": 760,
+      "h": 820,
+      "page": "epics"
+    },
+    {
+      "file": "MobileEpics.dc.html",
+      "title": "มือถือ · Epics",
+      "x": 1380,
+      "y": 960,
+      "w": 390,
+      "h": 844,
+      "page": "epics"
+    },
     {
       "file": "TopicSelect.dc.html",
       "title": "Desktop · เลือกงานที่มีอยู่ → รวมเป็นหัวข้อ",
@@ -285,6 +325,6 @@
   ],
   "launch": {
     "view": "canvas",
-    "page": "tasks"
+    "page": "epics"
   }
 }
