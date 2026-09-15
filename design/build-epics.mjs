@@ -118,7 +118,27 @@ const css2 = css + `
   .kv { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; } .kv div { border-radius: 12px; background: #f7f5fc; padding: 8px 10px; display: flex; flex-direction: column; } .kv span { font-size: 11px; color: #716a91; } .kv b { font-size: 16px; font-weight: 600; }
   .tl2 { display: flex; flex-direction: column; gap: 4px; } .tl2 .it { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; border-radius: 10px; background: #f7f5fc; font-size: 12px; } .tl2 .it small { margin-left: auto; color: #716a91; } .tl2 .it .bx2 { width: 14px; height: 14px; border-radius: 4px; border: 2px solid #c9c4e0; } .tl2 .it .bx2.on { background: #8fd3c7; border-color: #8fd3c7; }
   .colorrow { display: flex; align-items: center; gap: 10px; }
+
   .m .grid3 { grid-template-columns: 1fr; }
+  .secbox { border-radius: 14px; background: #f7f5fc; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .sechead { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #4e37b0; } .sechead small { font-weight: 400; color: #716a91; }
+  .swatch2 { display: flex; gap: 8px; align-items: center; height: 40px; } .swatch2 span { width: 28px; height: 28px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #fff; } .swatch2 span.on { outline: 2px solid #2f2a4a; outline-offset: 2px; }
+  .trow2 { display: grid; grid-template-columns: 22px minmax(0,1fr) 92px 32px; gap: 8px; align-items: center; } .trow2 .in { height: 38px; border-radius: 10px; background: #ffffff; padding: 0 10px; display: flex; align-items: center; justify-content: space-between; } .trow2 .in span.u { color: #716a91; font-size: 11px; } .trow2 .grip { color: #c9c4e0; display: flex; justify-content: center; } .trow2 .del { width: 32px; height: 32px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #b7b1d6; }
+  .rowh2 { display: grid; grid-template-columns: 22px minmax(0,1fr) 92px 32px; gap: 8px; font-size: 11px; color: #716a91; padding: 0 10px; }
+  .sumline { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #4e37b0; background: #e6e1fb; border-radius: 12px; padding: 10px 12px; } .sumline b { font-weight: 600; }
+  .mpage { flex: 1; overflow: hidden; padding: 14px 12px 0; display: flex; flex-direction: column; gap: 12px; }
+  .mtitle { display: flex; align-items: baseline; gap: 10px; } .mtitle h1 { margin: 0; font-size: 22px; font-weight: 600; } .mtitle small { color: #716a91; font-size: 12px; }
+  .mfilters { display: flex; gap: 8px; } .mfilters .chip { height: 32px; }
+  .mcard { background: #ffffff; border-radius: 18px; box-shadow: 0 2px 8px rgba(47,42,74,0.06); padding: 14px 16px 14px 20px; display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden; }
+  .mcard::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--c); }
+  .mcard .top { display: flex; align-items: center; gap: 8px; } .mcard h3 { flex: 1; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mcard .pbrow { display: flex; align-items: center; gap: 10px; } .mcard .pb { flex: 1; height: 8px; border-radius: 999px; background: #f2f0fa; overflow: hidden; } .mcard .pb div { height: 8px; border-radius: 999px; background: var(--c); } .mcard .pct { font-size: 13px; font-weight: 600; width: 40px; text-align: right; }
+  .mcard .meta { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #716a91; } .mcard .meta b { color: #2f2a4a; font-weight: 600; } .mcard .meta .avs { margin-left: auto; }
+  .bnav2 { position: absolute; left: 0; right: 0; bottom: 0; height: 84px; background: #ffffff; border-radius: 24px 24px 0 0; box-shadow: 0 -4px 24px rgba(47,42,74,0.08); display: flex; align-items: flex-start; justify-content: space-around; padding: 8px 8px 0; }
+  .bnav2 .ni { width: 60px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: #716a91; } .bnav2 .ni.on { color: #6a4fd8; font-weight: 500; } .bnav2 .ni svg { color: currentColor; }
+  .bnav2 .fab2 { width: 56px; height: 56px; border-radius: 999px; background: #2f2a4a; color: #fff; display: flex; align-items: center; justify-content: center; margin-top: -30px; box-shadow: 0 6px 16px rgba(47,42,74,0.24); }
+  .mfab { position: absolute; right: 16px; bottom: 100px; height: 40px; padding: 0 14px; border-radius: 999px; background: #6a4fd8; color: #fff; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; box-shadow: 0 6px 16px rgba(106,79,216,0.35); }
+
 
   .selbar { position: absolute; left: 50%; transform: translateX(-50%); bottom: 24px; display: flex; align-items: center; gap: 8px; height: 52px; padding: 0 8px 0 16px; border-radius: 999px; background: #2f2a4a; color: #ffffff; box-shadow: 0 10px 30px rgba(47,42,74,0.3); font-size: 13px; }
   .selbar .b { height: 36px; padding: 0 12px; border-radius: 999px; background: rgba(255,255,255,0.12); display: inline-flex; align-items: center; gap: 6px; } .selbar .b.pri { background: #6a4fd8; }
@@ -250,31 +270,66 @@ const ganttEpic = `<div style="padding:16px;display:flex;flex-direction:column;g
 </div>`;
 
 // ---------------- 3. create epic dialog
-const createEpic = `<div class="backdrop"><div class="dlg" style="width:640px">
-  <div class="dlg-head"><div><h2>สร้าง Epic</h2><p>Epic คือกลุ่มงานที่มีสีและเป้าหมายของตัวเอง งานข้างในกำหนดวันและ % ของ Epic</p></div><div class="iconbtn">${I.x(16)}</div></div>
-  <div class="frow"><div class="field" style="flex:2"><div class="label">ชื่อ Epic</div><div class="input">Picking list</div></div><div class="field"><div class="label">สี</div><div class="swatches" style="height:40px;align-items:center"><span style="background:#6a4fd8"></span><span class="on" style="background:#e0457b"></span><span style="background:#1f9e89"></span><span style="background:#f28c28"></span><span style="background:#2e86de"></span></div></div></div>
-  <div class="field"><div class="label">เป้าหมาย / คำอธิบาย <span class="r">ไม่บังคับ</span></div><div class="input" style="height:auto;padding:10px 12px;font-size:12px;line-height:1.45;align-items:flex-start;color:#716a91">เช่น พนักงานหยิบสินค้าตาม picking list บนมือถือ ยืนยันแล้วส่งผลกลับ LMS</div></div>
-  <div class="frow"><div class="field"><div class="label">เจ้าของ</div><div class="input"><span style="display:flex;align-items:center;gap:8px"><span class="av2" style="background:#e0457b;width:22px;height:22px;border-radius:999px;color:#fff;font-size:11px;display:inline-flex;align-items:center;justify-content:center">ด</span>สุดา</span>${I.chev(14)}</div></div><div class="field"><div class="label">วาง Epic ไว้</div><div class="input"><span>ท้ายสุดของโปรเจกต์</span>${I.chev(14)}</div></div></div>
-  <div class="tabs"><span class="on">งานใน Epic</span><span>วางจาก Excel / รายการ</span><span>เลือกจากงานที่มีอยู่</span></div>
-  <div class="rowh"><span>ชื่องาน</span><span>ระยะเวลา</span><span></span></div>
-  ${['Picking list|3','Plant Route (Mobile)|5','Confirm|2','Import LMS|3','Import Due list|2'].map(x=>{const [n,d]=x.split('|');return `<div class="trow"><div class="in"><span>${n}</span></div><div class="in"><span>${d}</span><span class="u">วัน</span></div><span class="del">${I.trash(14)}</span></div>`}).join('')}
-  <div class="addstep">${I.plus(16)}<span>เพิ่มงาน</span></div>
-  <div class="opts"><div class="optrow"><span style="width:120px">ลำดับงานข้างใน</span><div class="seg"><span class="on">ต่อกันตามลำดับ (FS)</span><span>ทำพร้อมกัน</span></div><span class="faint" style="margin-left:auto">Epic ยาว 15 วัน · เสร็จ 20 ต.ค.</span></div></div>
+const rowE = (n, d) => `<div class="trow2"><span class="grip">${I.grip(14)}</span><div class="in"><span>${n}</span></div><div class="in"><span>${d}</span><span class="u">วัน</span></div><span class="del">${I.trash(14)}</span></div>`;
+const createEpic = `<div class="backdrop"><div class="dlg" style="width:680px;gap:14px">
+  <div class="dlg-head"><div><h2>สร้าง Epic</h2><p>Epic คือเรื่องใหญ่หนึ่งเรื่องที่มีสีและเป้าหมายของตัวเอง งานข้างในเป็นตัวกำหนดวันและ % ของ Epic</p></div><div class="iconbtn">${I.x(16)}</div></div>
+
+  <div class="secbox">
+    <div class="sechead">1 · ข้อมูล Epic</div>
+    <div class="frow">
+      <div class="field" style="flex:1"><div class="label">ชื่อ Epic</div><div class="input" style="background:#ffffff">Picking list</div></div>
+      <div class="field" style="flex:0 0 auto"><div class="label">สี</div><div class="swatch2"><span style="background:#6a4fd8"></span><span class="on" style="background:#e0457b">${I.check(14)}</span><span style="background:#1f9e89"></span><span style="background:#f28c28"></span><span style="background:#2e86de"></span><span style="background:#a1519c"></span></div></div>
+    </div>
+    <div class="field"><div class="label">เป้าหมาย / คำอธิบาย <span class="r">ไม่บังคับ</span></div><div class="input" style="height:auto;min-height:56px;padding:10px 12px;font-size:12px;line-height:1.45;align-items:flex-start;background:#ffffff">พนักงานหยิบสินค้าตาม picking list บนมือถือ ยืนยันแล้วส่งผลกลับ LMS</div></div>
+    <div class="frow">
+      <div class="field"><div class="label">เจ้าของ</div><div class="input" style="background:#ffffff"><span style="display:flex;align-items:center;gap:8px"><span style="background:#e0457b;width:22px;height:22px;border-radius:999px;color:#fff;font-size:11px;display:inline-flex;align-items:center;justify-content:center">ด</span>สุดา</span>${I.chev(14)}</div></div>
+      <div class="field"><div class="label">วาง Epic ไว้</div><div class="input" style="background:#ffffff"><span>ท้ายสุดของโปรเจกต์</span>${I.chev(14)}</div></div>
+    </div>
+  </div>
+
+  <div class="secbox">
+    <div class="sechead">2 · งานใน Epic <small>เลือกวิธีใส่งานได้ 3 แบบ</small></div>
+    <div class="tabs" style="background:#ffffff"><span class="on">พิมพ์เอง</span><span>วางจาก Excel / รายการ</span><span>เลือกจากงานที่มีอยู่</span></div>
+    <div class="rowh2"><span></span><span>ชื่องาน</span><span>ระยะเวลา</span><span></span></div>
+    ${rowE('Picking list', 3)}
+    ${rowE('Plant Route (Mobile)', 5)}
+    ${rowE('Confirm', 2)}
+    ${rowE('Import LMS', 3)}
+    ${rowE('Import Due list', 2)}
+    <div class="addstep" style="background:#ffffff">${I.plus(16)}<span>เพิ่มงาน · Enter ขึ้นแถวใหม่</span></div>
+    <div class="optrow"><span style="width:120px">ลำดับงานข้างใน</span><div class="seg"><span class="on">ต่อกันตามลำดับ (FS)</span><span>ทำพร้อมกัน</span></div></div>
+  </div>
+
+  <div class="sumline">${I.info(14)}<span>Epic นี้จะยาว <b>15 วันทำงาน</b> · เริ่ม 29 ก.ย. เสร็จ <b>20 ต.ค. 2569</b> · แก้ทุกอย่างได้ทีหลังในแผง Epic</span></div>
   <div class="dlg-foot"><span class="spacer"></span><div class="btn ghost">ยกเลิก</div><div class="btn primary">${I.plus(16)}<span>สร้าง Epic + 5 งาน</span></div></div>
 </div></div>`;
 
 // ---------------- 4. mobile epics
+const mcard = (e) => `<div class="mcard" style="--c:${e.c}">
+  <div class="top"><h3>${e.n}</h3><span class="st ${e.s}">${stLabel[e.s]}</span></div>
+  <div class="pbrow"><div class="pb"><div style="width:${e.pg}%"></div></div><span class="pct">${e.pg}%</span></div>
+  <div class="meta"><span>งาน <b>${e.done}/${e.t}</b></span><span>${e.from} – ${e.to}</span><div class="avs">${e.who.map(w=>`<span class="av2" style="background:${who[w]}">${w}</span>`).join('')}</div></div>
+</div>`;
+const navIcon = (d, s) => icon(d, s);
 const mobileEpics = `<div class="phone m">
   <div class="mhdr"><div class="ib" style="background:#ffd166;border-radius:10px;width:30px;height:30px"></div><div class="sw" style="flex:1;justify-content:center">ระบบ WMS ${I.chev(14)}</div><div class="ib">···</div></div>
-  <div class="mbody">
-    <div class="pagehead"><h1 style="font-size:18px">Epics</h1><span class="chip soft" style="height:26px">5 · 17 งาน</span></div>
-    <div class="grid3" style="gap:10px;overflow:hidden">${EP.slice(0,4).map(card).join('')}</div>
+  <div class="mpage">
+    <div class="mtitle"><h1>Epics</h1><small>5 epics · 17 งาน · เสร็จ 5</small></div>
+    <div class="mfilters"><span class="chip primary">ทั้งหมด 5</span><span class="chip soft">กำลังทำ 2</span><span class="chip">ล่าช้า 1</span><span class="chip soft">เสร็จ 1</span></div>
+    ${EP.slice(0,4).map(mcard).join('')}
   </div>
-  <div class="bnav" style="height:64px;display:flex;align-items:center;justify-content:space-around;font-size:11px;color:#716a91"><span>Gantt</span><span>ปฏิทิน</span><span style="width:56px;height:56px;border-radius:999px;background:#2f2a4a;color:#fff;display:flex;align-items:center;justify-content:center;margin-top:-26px">${I.plus(24)}</span><span style="color:#6a4fd8;font-weight:500">Epics</span><span>ทรัพยากร</span></div>
+  <div class="mfab">${I.plus(16)}<span>สร้าง Epic</span></div>
+  <div class="bnav2">
+    <div class="ni">${navIcon('<path d="M4 6h8"></path><path d="M9 12h9"></path><path d="M6 18h7"></path>', 22)}<span>Gantt</span></div>
+    <div class="ni">${navIcon('<rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18"></path><path d="M8 3v4"></path><path d="M16 3v4"></path>', 22)}<span>ปฏิทิน</span></div>
+    <div class="fab2">${I.plus(26)}</div>
+    <div class="ni on">${navIcon('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>', 22)}<span>Epics</span></div>
+    <div class="ni">${navIcon('<circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20a6.5 6.5 0 0 1 13 0"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7"></path><path d="M17.5 14a6 6 0 0 1 4 6"></path>', 22)}<span>ทรัพยากร</span></div>
+  </div>
 </div>`;
 
 writeFileSync('EpicsPage.dc.html', wrap(epicsPage, { w: 1280, h: 720 }));
 writeFileSync('GanttEpic.dc.html', wrap(ganttEpic, { w: 1280, h: 620 }));
-writeFileSync('CreateEpic.dc.html', wrap(createEpic, { w: 760, h: 820 }));
+writeFileSync('CreateEpic.dc.html', wrap(createEpic, { w: 760, h: 960 }));
 writeFileSync('MobileEpics.dc.html', wrap(mobileEpics, { w: 390, h: 844 }));
 console.log('built EpicsPage, GanttEpic, CreateEpic, MobileEpics');
