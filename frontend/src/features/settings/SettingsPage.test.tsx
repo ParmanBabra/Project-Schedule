@@ -92,7 +92,12 @@ describe('SettingsPage', () => {
     await waitFor(() => expect(patchRules).toHaveBeenCalledTimes(2))
     expect(JSON.parse((patchRules.mock.calls[1] as unknown as [RequestInit])[0].body as string)).toMatchObject({ lagUnit: 'working' })
 
-    await userEvent.type(screen.getByLabelText('วันหยุดใหม่'), '2026-10-13')
+    await userEvent.click(screen.getByRole('button', { name: 'วันหยุดใหม่' }))
+    const picker = screen.getByTestId('date-picker')
+    while ((await within(picker).findByRole('grid')).getAttribute('aria-label') !== 'ตุลาคม 2569') {
+      await userEvent.click(within(picker).getByRole('button', { name: 'เดือนถัดไป' }))
+    }
+    await userEvent.click(within(picker).getByTestId('day-2026-10-13'))
     await userEvent.click(screen.getByRole('button', { name: 'เพิ่มวันหยุด' }))
     await waitFor(() => expect(patchProject).toHaveBeenCalled())
     expect(JSON.parse((patchProject.mock.calls[0] as unknown as [RequestInit])[0].body as string)).toEqual({ holidays: ['2026-10-13'] })

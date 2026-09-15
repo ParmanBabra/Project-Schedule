@@ -203,9 +203,11 @@ export function GanttChart({
   // ghost geometry for the dragged bar (immediate feedback, before the preview arrives)
   const ghost = useMemo(() => {
     if (!drag || !drag.active || drag.mode === 'link') return null
-    const g = geometries.get(drag.taskId)
     const s = project.schedule.tasks[drag.taskId]
-    if (!g || !s) return null
+    if (!s) return null
+    // always measure from the committed schedule: the preview already contains the move,
+    // so using `geometries` here would shift the ghost by the delta twice
+    const g = barGeometry(axis, s)
     const days = snapDays(drag.dx, axis.pxPerDay)
     const patch = currentPatch(drag)
     if (drag.mode === 'move') return { x: g.x + days * axis.pxPerDay, width: g.width, label: patch?.start ? `เริ่ม ${formatThai(patch.start)}` : '' }

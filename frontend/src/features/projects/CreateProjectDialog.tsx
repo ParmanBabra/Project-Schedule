@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError } from '@/shared/api/client'
 import { todayISO } from '@/shared/lib/date'
-import { Button, DateInput, Dialog, Field, Input, WeekdayPicker, useToast } from '@/shared/ui'
+import { Button, DatePicker, Dialog, Field, Input, WeekdayPicker, useToast } from '@/shared/ui'
 import { useCreateProject } from './api'
 
 export function CreateProjectDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -65,7 +65,7 @@ export function CreateProjectDialog({ open, onClose }: { open: boolean; onClose:
           <Input id="new-project-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="เช่น ระบบจองห้องประชุม" maxLength={200} />
         </Field>
         <Field label="วันเริ่ม" htmlFor="new-project-start">
-          <DateInput id="new-project-start" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <DatePicker id="new-project-start" aria-label="วันเริ่ม" value={startDate} onChange={setStartDate} />
         </Field>
         <Field label="วันทำงาน" hint="วันที่ระบบนับเป็นวันทำงาน วันอื่นจะถูกข้าม">
           <WeekdayPicker value={workingDays} onChange={setWorkingDays} />

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { pickDate } from './helpers'
 import { seedSampleProject } from '../shots/seed'
 
 test('ทรัพยากร: เห็นเกินกำลัง มอบหมายจากแผงงาน และไปที่งาน', async ({ page, request }, testInfo) => {
@@ -23,7 +24,8 @@ test('ทรัพยากร: เห็นเกินกำลัง มอ�
 
   // resources page lists everyone with the warning card; "ไปที่งาน" jumps back to the Gantt
   await page.goto('/resources?project=' + pid)
-  await page.getByLabel('วันเริ่มช่วง').fill('2026-09-14')
+  await page.getByLabel('วันเริ่มช่วง').click()
+  await pickDate(page, '2026-09-14')
   const card = page.getByTestId('overallocation-card')
   await expect(card).toContainText('สุดา')
   await expect(card).toContainText('17 ก.ย. – 22 ก.ย.')

@@ -10,7 +10,7 @@ import {
   Card,
   Chip,
   ChipButton,
-  DateInput,
+  DatePicker,
   Dialog,
   EmptyState,
   Field,
@@ -83,7 +83,7 @@ export function ResourcesPage() {
         />
         <span className={styles.range}>
           <span>ช่วง 14 วันจาก</span>
-          <DateInput aria-label="วันเริ่มช่วง" value={from} onChange={(e) => e.target.value && setFrom(e.target.value)} />
+          <DatePicker aria-label="วันเริ่มช่วง" value={from} onChange={(v) => v && setFrom(v)} />
         </span>
         <span className={styles.spacer} />
         <Button variant="primary" icon={<Plus size={16} />} onClick={() => setEditing('new')}>
@@ -325,7 +325,7 @@ function ResourceDialog({ resource, onClose }: { resource: Resource | null; onCl
               </ChipButton>
             ))}
             <span className={styles.offAdd}>
-              <DateInput aria-label="วันลาใหม่" value={off} onChange={(e) => setOff(e.target.value)} />
+              <DatePicker aria-label="วันลาใหม่" value={off} onChange={setOff} />
               <Button
                 size="sm"
                 icon={<Plus size={14} />}

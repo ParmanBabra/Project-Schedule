@@ -96,3 +96,11 @@
   .free { font-size: var(--fs-label); color: var(--text-4); align-self: center; }
   .legend { display: none; }
 }
+
+/* the task panel sits inside the card; on desktop the content shrinks instead of being covered */
+@media (min-width: 768px) {
+  .withPanel { padding-right: var(--w-panel); }
+}
+@media (max-width: 1023px) and (min-width: 768px) {
+  .withPanel { padding-right: 360px; }
+}

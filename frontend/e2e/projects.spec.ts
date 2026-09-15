@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { pickDate } from './helpers'
 
 test('สร้างโปรเจกต์ → เปิด Gantt → กลับมาเห็นการ์ด → ลบ', async ({ page }) => {
   const name = `E2E โปรเจกต์ ${Date.now()}`
@@ -6,7 +7,8 @@ test('สร้างโปรเจกต์ → เปิด Gantt → กล�
   await page.getByRole('button', { name: 'โปรเจกต์ใหม่' }).click()
   const dialog = page.getByRole('dialog', { name: 'โปรเจกต์ใหม่' })
   await dialog.getByLabel('ชื่อโปรเจกต์').fill(name)
-  await dialog.getByLabel('วันเริ่ม').fill('2026-09-14')
+  await dialog.getByLabel('วันเริ่ม').click()
+  await pickDate(page, '2026-09-14')
   await dialog.getByRole('button', { name: 'สร้างโปรเจกต์' }).click()
 
   await expect(page).toHaveURL(/\/p\/prj_[0-9a-f]+\/gantt$/)

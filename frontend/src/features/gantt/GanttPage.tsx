@@ -327,7 +327,7 @@ export function GanttPage() {
         </Button>
       </div>
 
-      <Card className={styles.card}>
+      <Card className={[styles.card, selectedId && p.schedule.tasks[selectedId] && styles.withPanel].filter(Boolean).join(' ')}>
         {p.tasks.length === 0 ? (
           <div className={styles.empty}>
             <EmptyState

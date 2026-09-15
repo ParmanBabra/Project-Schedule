@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { pickDate } from './helpers'
 import { seedSampleProject } from '../shots/seed'
 
 test('ตั้งค่า: สลับวิธีสำรองเวลา เพิ่มวันหยุด และเห็นผลใน Gantt', async ({ page, request }, testInfo) => {
@@ -17,7 +18,8 @@ test('ตั้งค่า: สลับวิธีสำรองเวลา
   await expect(page.getByTestId('buffer-example-percent')).toContainText('× 25% → เผื่อ 5 วัน')
 
   // holiday on the critical path pushes the plan by one working day
-  await page.getByLabel('วันหยุดใหม่').fill('2026-09-15')
+  await page.getByLabel('วันหยุดใหม่').click()
+  await pickDate(page, '2026-09-15')
   await page.getByRole('button', { name: 'เพิ่มวันหยุด' }).click()
   await expect(page.getByRole('button', { name: 'ลบวันหยุด 15 ก.ย. 2569' })).toBeVisible()
 

@@ -5,7 +5,7 @@ import {
   Button,
   Card,
   Chip,
-  DateInput,
+  DatePicker,
   Dialog,
   EmptyState,
   Field,
@@ -76,7 +76,7 @@ export function UiPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
           <Field label="ชื่องาน" htmlFor="ui-name"><Input id="ui-name" placeholder="ถ้าราบรื่น กี่วัน" /></Field>
           <Field label="ระยะเวลา" htmlFor="ui-dur" hint="ไม่ต้องเผื่อ"><NumberInput id="ui-dur" value={num} onChange={setNum} min={0} suffix="วัน" /></Field>
-          <Field label="วันเริ่ม" htmlFor="ui-date"><DateInput id="ui-date" defaultValue="2026-09-14" /></Field>
+          <Field label="วันเริ่ม" htmlFor="ui-date"><DatePicker id="ui-date" aria-label="วันเริ่ม" value="2026-09-14" onChange={() => {}} /></Field>
           <Field label="ประเภท" htmlFor="ui-sel">
             <Select id="ui-sel" value={sel} onChange={setSel} options={[{ value: 'FS', label: 'FS เสร็จแล้วค่อยเริ่ม' }, { value: 'SS', label: 'SS เริ่มพร้อมกัน' }]} />
           </Field>

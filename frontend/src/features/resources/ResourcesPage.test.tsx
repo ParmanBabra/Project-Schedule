@@ -64,7 +64,12 @@ describe('ResourcesPage', () => {
     await userEvent.clear(within(dialog).getByLabelText('กำลังต่อวัน'))
     await userEvent.type(within(dialog).getByLabelText('กำลังต่อวัน'), '80')
     await userEvent.click(within(dialog).getByRole('radio', { name: '#1f9e89' }))
-    await userEvent.type(within(dialog).getByLabelText('วันลาใหม่'), '2026-10-01')
+    await userEvent.click(within(dialog).getByRole('button', { name: 'วันลาใหม่' }))
+    const picker = screen.getByTestId('date-picker')
+    while ((await within(picker).findByRole('grid')).getAttribute('aria-label') !== 'ตุลาคม 2569') {
+      await userEvent.click(within(picker).getByRole('button', { name: 'เดือนถัดไป' }))
+    }
+    await userEvent.click(within(picker).getByTestId('day-2026-10-01'))
     await userEvent.click(within(dialog).getByRole('button', { name: 'เพิ่มวันลา' }))
     await userEvent.click(within(dialog).getByRole('button', { name: 'เพิ่ม' }))
     await waitFor(() => expect(post).toHaveBeenCalled())

@@ -263,3 +263,11 @@
 @media (max-width: 1100px) { .legendHint { display: none; } }
 
 .lateTag { flex-shrink: 0; height: 18px; padding: 0 6px; border-radius: var(--r-pill); background: var(--critical-bg); color: var(--critical-text); font-size: var(--fs-micro); font-weight: var(--fw-semibold); display: inline-flex; align-items: center; }
+
+/* the task panel sits inside the card; on desktop the content shrinks instead of being covered */
+@media (min-width: 768px) {
+  .withPanel { padding-right: var(--w-panel); }
+}
+@media (max-width: 1023px) and (min-width: 768px) {
+  .withPanel { padding-right: 360px; }
+}

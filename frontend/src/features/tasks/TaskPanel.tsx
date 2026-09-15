@@ -13,7 +13,7 @@ import { formatThai } from '@/shared/lib/date'
 import {
   Button,
   Chip,
-  DateInput,
+  DatePicker,
   Dialog,
   Field,
   IconButton,
@@ -258,10 +258,10 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
                 label="เริ่มไม่ก่อนวันที่กำหนด"
               />
               {task.constraint && (
-                <DateInput
+                <DatePicker
                   aria-label="เริ่มไม่ก่อนวันที่"
                   value={task.constraint.date}
-                  onChange={(e) => e.target.value && updateTask.mutate({ taskId, constraint: { type: 'SNET', date: e.target.value } })}
+                  onChange={(v) => v && updateTask.mutate({ taskId, constraint: { type: 'SNET', date: v } })}
                 />
               )}
             </div>

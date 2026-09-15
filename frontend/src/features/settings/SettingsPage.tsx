@@ -19,7 +19,7 @@ import {
   Card,
   Chip,
   ChipButton,
-  DateInput,
+  DatePicker,
   Dialog,
   EmptyState,
   Field,
@@ -155,7 +155,7 @@ function SettingsForm({ project, methods, rules, mrHelp }: { project: ProjectOut
               />
             </Field>
             <Field label="วันเริ่ม" htmlFor="st-start" hint="งานที่ไม่มีงานก่อนหน้าจะเริ่มวันนี้">
-              <DateInput id="st-start" value={project.startDate} onChange={(e) => e.target.value && updateProject.mutate({ startDate: e.target.value }, { onSuccess: saved, onError: failed })} />
+              <DatePicker id="st-start" aria-label="วันเริ่ม" value={project.startDate} onChange={(v) => v && updateProject.mutate({ startDate: v }, { onSuccess: saved, onError: failed })} />
             </Field>
           </div>
         </Card>
@@ -175,7 +175,7 @@ function SettingsForm({ project, methods, rules, mrHelp }: { project: ProjectOut
               </ChipButton>
             ))}
             <span className={styles.holAdd}>
-              <DateInput aria-label="วันหยุดใหม่" value={holiday} min={project.startDate} onChange={(e) => setHoliday(e.target.value)} />
+              <DatePicker aria-label="วันหยุดใหม่" value={holiday} min={project.startDate} onChange={setHoliday} />
               <Button
                 size="sm"
                 icon={<Plus size={14} />}

@@ -206,7 +206,7 @@ export function CalendarPage() {
         </div>
       </div>
 
-      <Card className={styles.card} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} data-testid="calendar-card">
+      <Card className={[styles.card, selectedId && p.schedule.tasks[selectedId] && styles.withPanel].filter(Boolean).join(' ')} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} data-testid="calendar-card">
         {p.tasks.length === 0 ? (
           <EmptyState title="ยังไม่มีงานให้แสดง" description="เพิ่มงานใน Gantt ก่อน แล้วปฏิทินจะแสดงงานตามวัน" />
         ) : view === 'month' ? (
