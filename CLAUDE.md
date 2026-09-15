@@ -57,7 +57,7 @@ cd frontend && npm run test:visual     # visual regression เทียบ basel
 cd frontend && npm run visual:approve  # ล็อก baseline ใหม่ (หลัง review เท่านั้น)
 ```
 
-หรือใช้ VS Code: Terminal → Run Task → `dev: all`, `test: all`, `test: e2e (playwright)`
+หรือใช้ VS Code: Terminal → Run Task → `dev: all`, `test: all`, `test: e2e (playwright)`, `start: production`, `tunnel: ngrok` (งาน shots/visual/lint ใช้ npm script ตามด้านบน)
 
 Login: ผู้ใช้เดียวจาก config (`backend/config.json` หรือ env `AUTH_*`) e2e/shots ล็อกอินให้อัตโนมัติผ่าน project `setup`; pytest รันแบบ `AUTH_DISABLED` ยกเว้นเทสต์ที่ใช้ fixture `auth_env`; หน้าจอที่ต้องไม่มี session ใส่ `noAuth: true` ใน screens.ts
 
