@@ -15,6 +15,20 @@ export interface Estimate {
   p: number
 }
 
+export interface ChecklistItem {
+  id: string
+  text: string
+  done: boolean
+}
+
+/** A row of the "create task chain" dialog (TSK-9); remembered per project. */
+export interface ChainStep {
+  name: string
+  duration: number
+  enabled: boolean
+  parallel: boolean
+}
+
 export interface Task {
   id: string
   name: string
@@ -27,6 +41,8 @@ export interface Task {
   collapsed: boolean
   order: number
   estimate: Estimate | null
+  checklist: ChecklistItem[]
+  progressFromChecklist: boolean
 }
 
 export interface Dependency {
@@ -150,6 +166,7 @@ export interface Project {
   buffer: BufferSettings
   rules: Rules
   baseline: Baseline | null
+  chainTemplates: ChainStep[] | null
   createdAt: string
   updatedAt: string
 }
@@ -207,6 +224,16 @@ export interface TaskUpdate {
   collapsed?: boolean
   estimate?: Estimate | null
   clearEstimate?: boolean
+  checklist?: Array<{ id?: string; text: string; done: boolean }>
+  progressFromChecklist?: boolean
+}
+
+export interface ChainBody {
+  steps: ChainStep[]
+  prefixWithSource: boolean
+  groupName: string | null
+  copyAssignees: boolean
+  remember: boolean
 }
 
 export interface DependencyCreate {

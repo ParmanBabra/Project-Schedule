@@ -12,10 +12,17 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // hot reload: warm the main graph at startup so the first edit updates instantly
+    warmup: { clientFiles: ['./src/main.tsx', './src/app/App.tsx', './src/features/gantt/GanttPage.tsx'] },
+    hmr: { overlay: true },
     proxy: {
       // API_TARGET lets Playwright point an isolated frontend at its own backend (see playwright.config.ts)
       '/api': { target: process.env.API_TARGET ?? 'http://127.0.0.1:8000', changeOrigin: true },
     },
+  },
+  build: {
+    sourcemap: false,
+    chunkSizeWarningLimit: 800,
   },
   test: {
     environment: 'jsdom',

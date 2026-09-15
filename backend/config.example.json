@@ -1,0 +1,10 @@
+{
+  "username": "admin",
+  "password": "change-me",
+  "sessionSecret": "generate a long random string, e.g. python -c \"import secrets;print(secrets.token_hex(32))\"",
+  "sessionHours": 168,
+  "cookieSecure": true,
+  "publicOrigin": "https://plan.example.com",
+  "staticDir": "frontend/dist",
+  "authDisabled": false
+}

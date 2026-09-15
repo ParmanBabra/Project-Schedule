@@ -1,5 +1,6 @@
-import { Calendar, ChevronDown, FolderKanban, GanttChartSquare, MoreHorizontal, Settings, Users } from 'lucide-react'
+import { Calendar, ChevronDown, FolderKanban, GanttChartSquare, LogOut, MoreHorizontal, Settings, Users } from 'lucide-react'
 import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom'
+import { useLogout, useMe } from '@/features/auth/api'
 import { useProject, useProjects } from '@/features/projects/api'
 import { IconButton, Menu } from '@/shared/ui'
 import { BottomNav } from './BottomNav'
@@ -13,6 +14,11 @@ import styles from './AppShell.module.css'
 export function AppShell() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
+  const me = useMe()
+  const logout = useLogout()
+  const canLogout = Boolean(me.data && !me.data.authDisabled)
+  const doLogout = () => logout.mutate(undefined, { onSettled: () => navigate('/login', { replace: true }) })
+  const logoutItem = canLogout ? [{ label: 'ออกจากระบบ', icon: <LogOut size={16} />, onSelect: doLogout }] : []
   return (
     <div className={styles.shell}>
       <header className={styles.hbar}>
@@ -31,10 +37,12 @@ export function AppShell() {
                     { label: 'ทรัพยากร', icon: <Users size={16} />, onSelect: () => navigate('/resources') },
                     { label: 'ตั้งค่า', icon: <Settings size={16} />, onSelect: () => navigate(`/p/${projectId}/settings`) },
                     { label: 'โปรเจกต์ทั้งหมด', icon: <FolderKanban size={16} />, onSelect: () => navigate('/') },
+                    ...logoutItem,
                   ]
                 : [
                     { label: 'โปรเจกต์', icon: <FolderKanban size={16} />, onSelect: () => navigate('/') },
                     { label: 'ทรัพยากร', icon: <Users size={16} />, onSelect: () => navigate('/resources') },
+                    ...logoutItem,
                   ]
             }
             trigger={(props) => (
@@ -59,6 +67,11 @@ export function AppShell() {
             </>
           )}
         </nav>
+        {canLogout && (
+          <IconButton label={`ออกจากระบบ (${me.data?.username})`} onDark className={styles.logout} onClick={doLogout} data-testid="logout">
+            <LogOut size={18} />
+          </IconButton>
+        )}
       </header>
       <main className={styles.main}>
         <Outlet />

@@ -75,9 +75,11 @@ export interface DialogProps {
   description?: string
   children?: ReactNode
   actions?: ReactNode
+  /** lg = 640px for dense forms (chain dialog); default 460px */
+  size?: 'md' | 'lg'
 }
 
-export function Dialog({ open, onClose, title, description, children, actions }: DialogProps) {
+export function Dialog({ open, onClose, title, description, children, actions, size = 'md' }: DialogProps) {
   const titleId = useId()
   const ref = useRef<HTMLDivElement>(null)
 
@@ -95,7 +97,7 @@ export function Dialog({ open, onClose, title, description, children, actions }:
   if (!open) return null
   return (
     <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} className={styles.dialog}>
+      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} className={[styles.dialog, size === 'lg' && styles.dialogLg].filter(Boolean).join(' ')}>
         <div className={styles.dialogHead}>
           <div>
             <h2 id={titleId} className={styles.dialogTitle}>

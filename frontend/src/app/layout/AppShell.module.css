@@ -72,3 +72,8 @@
   .mobileMenu { display: flex; }
   .switcher { min-width: 0; flex: 1; max-width: none; }
 }
+
+.logout { margin-left: auto; }
+@media (max-width: 767px) {
+  .logout { display: none; } /* the ⋯ menu carries it on mobile */
+}

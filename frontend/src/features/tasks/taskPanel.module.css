@@ -110,3 +110,23 @@
 .asgRow input { height: 30px; background: var(--surface); border-radius: 8px; font-size: var(--fs-label); padding: 0 26px 0 8px; }
 .warnBox { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; background: var(--warn-bg); color: var(--warn-text); font-size: var(--fs-label); line-height: 1.4; }
 .warnBox svg { flex-shrink: 0; color: var(--warn-icon); margin-top: 1px; }
+
+/* ---- งานย่อย (checklist) TSK-8 */
+.ckList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ck { display: flex; align-items: center; gap: var(--sp-2); min-height: 40px; border-radius: var(--r-input); background: var(--surface-2); padding: 0 4px 0 6px; }
+.ckDragging { opacity: 0.5; }
+.ckGrip { color: var(--text-4); display: flex; cursor: grab; touch-action: none; }
+.ckBox { width: 22px; height: 22px; border-radius: 7px; border: 2px solid var(--primary-tint); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--text-on-primary); background: transparent; }
+.ckBoxOn { background: var(--primary); border-color: var(--primary); }
+.ckText { flex: 1; min-width: 0; height: 32px; background: transparent; border: 0; font: inherit; color: inherit; padding: 0 4px; border-radius: 8px; }
+.ckText:focus-visible { background: var(--surface); outline: 2px solid var(--primary); outline-offset: 0; }
+.ckDone .ckText { color: var(--text-3); text-decoration: line-through; }
+.ckDel { width: 32px; height: 32px; border-radius: var(--r-pill); display: flex; align-items: center; justify-content: center; color: var(--text-4); flex-shrink: 0; }
+.ckDel:hover { color: var(--critical); background: var(--critical-bg); }
+.ckAdd { display: flex; align-items: center; gap: 6px; min-height: 40px; border-radius: var(--r-input); border: 2px dashed var(--border); padding: 0 var(--sp-3); color: var(--text-3); }
+.ckAdd:focus-within { border-color: var(--primary); color: var(--primary-dark); }
+.ckAdd input { flex: 1; min-width: 0; height: 34px; background: transparent; border: 0; font: inherit; color: var(--text); }
+.ckAdd input::placeholder { color: var(--text-3); }
+.infoBox { padding: 10px 12px; border-radius: 12px; background: var(--primary-light); color: var(--primary-dark); font-size: var(--fs-label); line-height: 1.45; }
+.infoBox b { font-weight: var(--fw-semibold); }
+.chainBtn { width: 100%; justify-content: center; }

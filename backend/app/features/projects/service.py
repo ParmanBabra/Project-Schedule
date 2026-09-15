@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from app.core.errors import ValidationFailed
 from app.core.ids import new_id
-from app.core.models import BufferSettings, Project, Rules, utcnow
+from app.core.models import BufferSettings, Project, Rules, Task, utcnow
 from app.features.scheduling.engine import compute_schedule
 
 from .repository import ProjectRepository
@@ -15,8 +15,24 @@ def to_out(project: Project) -> ProjectOut:
     return ProjectOut(**project.model_dump(by_alias=False), schedule=schedule)
 
 
+def checklist_progress(task: Task) -> int | None:
+    """Progress derived from the checklist (TSK-8), or None when the task is not driven by it."""
+    if not task.checklist or not task.progress_from_checklist:
+        return None
+    done = sum(1 for c in task.checklist if c.done)
+    return int(round(done * 100 / len(task.checklist)))
+
+
+def apply_checklists(project: Project) -> None:
+    for t in project.tasks:
+        derived = checklist_progress(t)
+        if derived is not None:
+            t.progress = derived
+
+
 def validate_and_save(repo: ProjectRepository, project: Project) -> ProjectOut:
     """Every mutation goes through here: compute (raises on invalid graphs) then persist."""
+    apply_checklists(project)
     schedule = compute_schedule(project)
     repo.save(project)
     return ProjectOut(**project.model_dump(by_alias=False), schedule=schedule)
@@ -123,6 +139,7 @@ def replace_state(repo: ProjectRepository, project_id: str, state: ProjectState)
     project.working_days = sorted(set(state.working_days))
     project.tasks = state.tasks
     project.dependencies = state.dependencies
+    project.chain_templates = state.chain_templates
     project.assignments = state.assignments
     project.buffer = state.buffer
     project.rules = state.rules

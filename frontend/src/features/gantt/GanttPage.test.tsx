@@ -70,7 +70,7 @@ describe('GanttPage', () => {
 
   it('collapses a group and hides its children', async () => {
     const p = sampleProject()
-    p.tasks.push({ id: 'g', name: 'พัฒนา', duration: 0, progress: 0, isMilestone: false, constraint: null, color: null, parentId: null, collapsed: false, order: 3.5, estimate: null })
+    p.tasks.push({ id: 'g', name: 'พัฒนา', duration: 0, progress: 0, isMilestone: false, constraint: null, color: null, parentId: null, collapsed: false, order: 3.5, estimate: null, checklist: [], progressFromChecklist: true })
     p.tasks.find((t) => t.id === 't4')!.parentId = 'g'
     p.tasks.find((t) => t.id === 't5')!.parentId = 'g'
     p.schedule.tasks.g = { ...p.schedule.tasks.t4, id: 'g', wbs: '4', isSummary: true, start: '2026-09-23', end: '2026-10-01' }

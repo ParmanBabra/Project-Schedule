@@ -50,12 +50,16 @@ npm run dev          # รัน backend :8000 + frontend :5173 พร้อม�
 npm test             # pytest + vitest
 npm run test:e2e     # playwright (เปิด server ให้เองถ้ายังไม่รัน) ไม่รวม visual
 npm run lint         # ruff + oxlint
+npm run build        # สร้าง frontend/dist
+npm run start        # production: FastAPI เสิร์ฟ API + frontend/dist ที่ :8000 (ดู docs/deploy.md)
 cd frontend && npm run shots           # ถ่ายภาพทุกหน้า + mockup สำหรับ design review
 cd frontend && npm run test:visual     # visual regression เทียบ baseline
 cd frontend && npm run visual:approve  # ล็อก baseline ใหม่ (หลัง review เท่านั้น)
 ```
 
 หรือใช้ VS Code: Terminal → Run Task → `dev: all`, `test: all`, `test: e2e (playwright)`
+
+Login: ผู้ใช้เดียวจาก config (`backend/config.json` หรือ env `AUTH_*`) e2e/shots ล็อกอินให้อัตโนมัติผ่าน project `setup`; pytest รันแบบ `AUTH_DISABLED` ยกเว้นเทสต์ที่ใช้ fixture `auth_env`; หน้าจอที่ต้องไม่มี session ใส่ `noAuth: true` ใน screens.ts
 
 Backend ใช้ venv ที่ `backend/.venv` (Python 3.11) เรียกผ่าน `backend/.venv/Scripts/python.exe -m …` เสมอ ไม่พึ่ง `python` ใน PATH
 
@@ -78,7 +82,7 @@ frontend/e2e/      playwright specs
 data/              JSON files (ignored by git)
 ```
 
-ชื่อ feature module ต้องตรงกันทั้งสองฝั่ง: projects, tasks, dependencies, scheduling, gantt (fe only), calendar (fe only), resources, assignments, settings, io, history
+ชื่อ feature module ต้องตรงกันทั้งสองฝั่ง: auth, projects, tasks, dependencies, scheduling, gantt (fe only), calendar (fe only), resources, assignments, settings, io, history
 
 ## ข้อตกลงด้านโค้ด
 

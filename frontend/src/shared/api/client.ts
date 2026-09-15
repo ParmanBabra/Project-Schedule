@@ -14,11 +14,23 @@ export class ApiError extends Error {
   }
 }
 
+const unauthorizedListeners = new Set<() => void>()
+
+/** Called whenever a request (other than the auth endpoints) answers 401 – the session is gone. */
+export function onUnauthorized(listener: () => void): () => void {
+  unauthorizedListeners.add(listener)
+  return () => unauthorizedListeners.delete(listener)
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
     headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+    credentials: 'same-origin',
     ...init,
   })
+  if (res.status === 401 && !path.startsWith('/auth/')) {
+    for (const l of unauthorizedListeners) l()
+  }
   if (!res.ok) {
     let body: unknown
     try {

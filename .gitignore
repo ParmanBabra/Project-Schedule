@@ -2,6 +2,10 @@
 /data/
 /.e2e-data/
 
+# secrets / sessions
+backend/config.json
+frontend/.auth/
+
 # python
 backend/.venv/
 __pycache__/

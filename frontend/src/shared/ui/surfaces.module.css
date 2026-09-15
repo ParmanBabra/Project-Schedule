@@ -91,10 +91,17 @@
 .dialogHead { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-3); }
 .dialogTitle { margin: 0; font-size: var(--fs-h2); font-weight: var(--fw-semibold); }
 .dialogDesc { margin: 4px 0 0; color: var(--text-2); font-size: var(--fs-label); }
-.dialogActions { display: flex; gap: var(--sp-2); justify-content: flex-end; flex-wrap: wrap; }
+.dialogLg { width: min(100%, 640px); }
+/* actions stay visible while a long dialog body scrolls */
+.dialogActions {
+  display: flex; gap: var(--sp-2); justify-content: flex-end; flex-wrap: wrap; align-items: center;
+  position: sticky; bottom: calc(-1 * var(--sp-6)); margin: 0 calc(-1 * var(--sp-6)) calc(-1 * var(--sp-6));
+  padding: var(--sp-3) var(--sp-6) var(--sp-6); background: var(--surface);
+}
 @media (max-width: 767px) {
   .overlay { align-items: flex-end; padding: 0; }
-  .dialog { width: 100%; border-radius: var(--r-sheet); padding-bottom: calc(var(--sp-6) + env(safe-area-inset-bottom)); }
+  .dialog { width: 100%; border-radius: var(--r-sheet); padding-bottom: calc(var(--sp-6) + env(safe-area-inset-bottom)); max-height: calc(100vh - 24px); }
+  .dialogActions { padding-bottom: calc(var(--sp-6) + env(safe-area-inset-bottom)); margin-bottom: calc(-1 * (var(--sp-6) + env(safe-area-inset-bottom))); }
 }
 
 /* Toast */

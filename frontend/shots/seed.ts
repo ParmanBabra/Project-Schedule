@@ -6,7 +6,8 @@ const SAMPLE_NAME = 'ระบบจองห้องประชุม (ตั
  * Creates (once) the documented sample project through the API and returns its id.
  * Used by screenshot capture and visual regression so screens show real data.
  */
-export async function seedSampleProject(request: APIRequestContext, name: string = SAMPLE_NAME): Promise<string> {
+export async function seedSampleProject(request: APIRequestContext, name: string = SAMPLE_NAME, opts: { assignments?: boolean } = {}): Promise<string> {
+  const withAssignments = opts.assignments ?? true
   const resourceSuffix = name === SAMPLE_NAME ? '' : ` (${name.replace(/^E2E /, '')})`
   const list = (await (await request.get('/api/projects')).json()) as Array<{ id: string; name: string; taskCount: number }>
   const existing = list.find((p) => p.name === name)
@@ -14,7 +15,7 @@ export async function seedSampleProject(request: APIRequestContext, name: string
     // another worker may still be seeding it – wait until the sample is complete (7 tasks + group)
     for (let i = 0; i < 60; i++) {
       const p = await (await request.get(`/api/projects/${existing.id}`)).json()
-      if (p.tasks?.length >= 8 && p.dependencies?.length >= 7 && p.assignments?.length >= 7) return existing.id
+      if (p.tasks?.length >= 8 && p.dependencies?.length >= 7 && (!withAssignments || p.assignments?.length >= 7)) return existing.id
       await new Promise((r) => setTimeout(r, 250))
     }
     return existing.id
@@ -49,6 +50,7 @@ export async function seedSampleProject(request: APIRequestContext, name: string
   for (const [a, b] of links) await request.post(`/api/projects/${pid}/dependencies`, { data: { from: ids[a], to: ids[b] } })
   // group design tasks so the WBS rollup shows
   await request.post(`/api/projects/${pid}/tasks/group`, { data: { name: 'ออกแบบ', taskIds: [ids['ออกแบบระบบ'], ids['ออกแบบ UI']] } })
+  if (!withAssignments) return pid // no resources at all: keeps the resources page / workload baselines untouched
   // resources: สุดา is deliberately over-allocated (UI + Frontend overlap on 21–22 Sep)
   const res = await seedResources(request, resourceSuffix)
   const assign = (task: string, resource: string, units = 100) =>

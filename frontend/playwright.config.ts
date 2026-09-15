@@ -7,10 +7,15 @@ const E2E_DATA_DIR = resolve(here, '../.e2e-data')
 const BACKEND_PORT = 8001
 const FRONTEND_PORT = 5174
 
+/** The e2e backend runs with the login gate ON using these credentials. */
+export const E2E_CREDENTIALS = { username: 'e2e', password: 'e2e-password' }
+/** Session cookie saved by e2e/auth.setup.ts and reused by every browser project. */
+export const STORAGE_STATE = resolve(here, '.auth/state.json')
+
 /**
  * End-to-end tests run against their OWN backend + frontend dev servers on separate
  * ports (8001 / 5174) with an isolated DATA_DIR, so they never touch `data/` or a
- * dev server you have running on 8000 / 5173.
+ * dev server you have running on 8000 / 5173. A `setup` project logs in first.
  */
 export default defineConfig({
   testDir: './e2e',
@@ -25,8 +30,9 @@ export default defineConfig({
     locale: 'th-TH',
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    { name: 'setup', testMatch: /auth\.setup\.ts/ },
+    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 }, storageState: STORAGE_STATE }, dependencies: ['setup'] },
+    { name: 'mobile', use: { ...devices['Pixel 7'], storageState: STORAGE_STATE }, dependencies: ['setup'] },
   ],
   webServer: [
     {
@@ -34,7 +40,14 @@ export default defineConfig({
       cwd: '../backend',
       url: `http://127.0.0.1:${BACKEND_PORT}/api/health`,
       reuseExistingServer: false,
-      env: { DATA_DIR: E2E_DATA_DIR },
+      env: {
+        DATA_DIR: E2E_DATA_DIR,
+        AUTH_DISABLED: '0',
+        AUTH_USERNAME: E2E_CREDENTIALS.username,
+        AUTH_PASSWORD: E2E_CREDENTIALS.password,
+        SESSION_SECRET: 'e2e-secret',
+        CONFIG_FILE: resolve(here, '.auth/no-config.json'), // never read the developer's real config.json
+      },
       timeout: 60_000,
     },
     {

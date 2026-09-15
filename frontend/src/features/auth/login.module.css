@@ -1,0 +1,24 @@
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--page-pad);
+  background: var(--bg);
+}
+.card {
+  width: min(100%, 400px);
+  background: var(--surface);
+  border-radius: var(--r-card);
+  box-shadow: var(--sh-card);
+  padding: var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.brand { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-2); }
+.mark { width: 44px; height: 44px; border-radius: 14px; background: var(--milestone); flex-shrink: 0; }
+.title { margin: 0; font-size: var(--fs-h1); font-weight: var(--fw-semibold); line-height: 1.2; }
+.sub { margin: 2px 0 0; color: var(--text-2); font-size: var(--fs-label); }
+.hint { margin: 0; color: var(--text-3); font-size: var(--fs-caption); line-height: 1.45; text-align: center; }

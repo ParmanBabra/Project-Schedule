@@ -20,6 +20,32 @@ def data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path / "data"
 
 
+@pytest.fixture(autouse=True)
+def _fresh_settings(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """Feature tests run with auth disabled; auth tests opt in via `auth_env`."""
+    from app.core.config import reset_settings_cache
+
+    monkeypatch.setenv("AUTH_DISABLED", "1")
+    monkeypatch.setenv("CONFIG_FILE", str(Path(os.environ.get("TMP", "/tmp")) / "no-config.json"))
+    monkeypatch.setenv("STATIC_DIR", str(Path(os.environ.get("TMP", "/tmp")) / "no-static"))
+    reset_settings_cache()
+    yield
+    reset_settings_cache()
+
+
+@pytest.fixture()
+def auth_env(monkeypatch: pytest.MonkeyPatch) -> dict[str, str]:
+    """Turn the login gate on with known credentials."""
+    from app.core.config import reset_settings_cache
+
+    creds = {"AUTH_USERNAME": "somchai", "AUTH_PASSWORD": "s3cret!", "SESSION_SECRET": "unit-test"}
+    monkeypatch.setenv("AUTH_DISABLED", "0")
+    for k, v in creds.items():
+        monkeypatch.setenv(k, v)
+    reset_settings_cache()
+    return creds
+
+
 @pytest.fixture()
 def client(data_dir: Path) -> Iterator[TestClient]:
     # Import inside the fixture so DATA_DIR is already patched when the app starts.

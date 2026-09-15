@@ -4,13 +4,15 @@
   "description": "แผนงาน – project scheduler (React + FastAPI, file-based)",
   "scripts": {
     "dev": "concurrently -n be,fe -c blue,magenta \"npm run dev:be\" \"npm run dev:fe\"",
-    "dev:be": "cd backend && .venv\\Scripts\\python.exe -m uvicorn app.main:app --reload --port 8000",
+    "dev:be": "cd backend && .venv\\Scripts\\python.exe -m uvicorn app.main:app --reload --reload-dir app --reload-delay 0.15 --port 8000",
     "dev:fe": "cd frontend && npm run dev",
     "test": "npm run test:be && npm run test:fe",
     "test:be": "cd backend && .venv\\Scripts\\python.exe -m pytest",
     "test:fe": "cd frontend && npm run test",
     "test:e2e": "cd frontend && npm run test:e2e",
-    "lint": "cd backend && .venv\\Scripts\\python.exe -m ruff check . && cd ../frontend && npm run lint"
+    "lint": "cd backend && .venv\\Scripts\\python.exe -m ruff check . && cd ../frontend && npm run lint",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && .venv\\Scripts\\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

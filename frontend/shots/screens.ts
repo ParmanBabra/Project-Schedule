@@ -15,11 +15,17 @@ export interface Screen {
   viewports?: Array<'desktop' | 'mobile'>
   mockup?: { desktop?: string; mobile?: string }
   setup?: (page: Page) => Promise<void>
+  /** render without the shared login session (login page itself) */
+  noAuth?: boolean
 }
 
 const gantt = async (request: APIRequestContext) => `/p/${await seedSampleProject(request)}/gantt`
+// a second sample so checklist edits never touch the shared one (other baselines stay stable)
+const ganttTasks = async (request: APIRequestContext) => `/p/${await seedSampleProject(request, 'ระบบจองห้องประชุม (งานย่อย)', { assignments: false })}/gantt`
 
 export const screens: Screen[] = [
+  { name: 'login', path: '/login', noAuth: true },
+  { name: 'login-error', path: '/login', noAuth: true, setup: async (page) => { await page.getByLabel('ชื่อผู้ใช้').fill('admin'); await page.getByLabel('รหัสผ่าน').fill('x'); await page.getByRole('button', { name: 'เข้าสู่ระบบ' }).click(); await page.getByRole('alert').waitFor() } },
   { name: 'projects', path: '/', mockup: {} },
   { name: 'projects-create', path: '/', setup: async (page) => { await page.getByRole('button', { name: 'โปรเจกต์ใหม่' }).click() } },
   { name: 'gantt', path: gantt, mockup: { desktop: 'GanttBuffer', mobile: 'MobileGantt' } },
@@ -32,6 +38,42 @@ export const screens: Screen[] = [
     setup: async (page) => { await page.getByRole('button', { name: /^ออกแบบระบบ/ }).first().click() },
   },
   { name: 'gantt-export', path: gantt, viewports: ['desktop'], setup: async (page) => { await page.getByRole('button', { name: 'ส่งออก' }).click() } },
+  {
+    name: 'gantt-task-checklist',
+    path: ganttTasks,
+    mockup: { desktop: 'TaskChecklist', mobile: 'MobileChecklist' },
+    setup: async (page) => {
+      await page.getByRole('button', { name: /^พัฒนา Backend/ }).first().click()
+      await page.getByTestId('checklist').waitFor()
+      // deterministic: the sample is reused across runs, so start from an empty list
+      while ((await page.getByRole('button', { name: /^ลบงานย่อย/ }).count()) > 0) {
+        await page.getByRole('button', { name: /^ลบงานย่อย/ }).first().click()
+        await page.waitForTimeout(150)
+      }
+      {
+        const add = page.getByLabel('เพิ่มงานย่อย')
+        for (const t of ['เขียน spec หน้าจอ', 'ตกลง API กับ Backend', 'ทำหน้าจอสแกน barcode', 'เชื่อม API บันทึกตำแหน่ง']) {
+          await add.fill(t)
+          await add.press('Enter')
+          await page.getByRole('checkbox', { name: `ทำเสร็จ ${t}` }).waitFor()
+        }
+        await page.getByRole('checkbox', { name: 'ทำเสร็จ เขียน spec หน้าจอ' }).click()
+        await page.getByRole('checkbox', { name: 'ทำเสร็จ ตกลง API กับ Backend' }).click()
+        await page.getByTestId('checklist-count').getByText('เสร็จ 2 / 4').waitFor()
+      }
+      await page.getByTestId('checklist').scrollIntoViewIfNeeded()
+    },
+  },
+  {
+    name: 'gantt-chain-dialog',
+    path: ganttTasks,
+    mockup: { desktop: 'ChainDialog', mobile: 'MobileChain' },
+    setup: async (page) => {
+      await page.getByRole('button', { name: /^ทดสอบระบบ/ }).first().click()
+      await page.getByTestId('open-chain').click()
+      await page.getByTestId('chain-preview').getByText(/โปรเจกต์จะเสร็จ/).waitFor()
+    },
+  },
   { name: 'gantt-task-list', path: gantt, setup: async (page) => { await page.getByRole('button', { name: 'รายการงาน' }).click() } },
   {
     name: 'gantt-dragging',
@@ -66,7 +108,7 @@ export const screens: Screen[] = [
 ]
 
 /** Mockup artboards rendered for side-by-side reference (design/*.dc.html). */
-export const mockups = ['Layout2', 'Layout3', 'GanttBuffer', 'SettingsDesktop', 'SettingsMobile', 'MobileGantt', 'MobileTaskSheet', 'MobileCalendar']
+export const mockups = ['Layout2', 'Layout3', 'GanttBuffer', 'SettingsDesktop', 'SettingsMobile', 'MobileGantt', 'MobileTaskSheet', 'MobileCalendar', 'TaskChecklist', 'ChainDialog', 'MobileChecklist', 'MobileChain']
 
 export async function resolvePath(screen: Screen, request: APIRequestContext): Promise<string> {
   return typeof screen.path === 'string' ? screen.path : screen.path(request)

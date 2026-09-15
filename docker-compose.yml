@@ -1,0 +1,38 @@
+# Public deployment: Caddy terminates HTTPS (automatic Let's Encrypt) and proxies to the app.
+# 1. copy .env.example -> .env and fill DOMAIN / AUTH_* / SESSION_SECRET
+# 2. docker compose up -d --build
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      AUTH_USERNAME: ${AUTH_USERNAME:?set in .env}
+      AUTH_PASSWORD: ${AUTH_PASSWORD:?set in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?set in .env}
+      SESSION_HOURS: ${SESSION_HOURS:-168}
+      PUBLIC_ORIGIN: https://${DOMAIN:?set in .env}
+      COOKIE_SECURE: "true"
+    volumes:
+      - data:/data
+    expose:
+      - "8000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  data:
+  caddy_data:
+  caddy_config:

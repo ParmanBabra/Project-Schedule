@@ -1,4 +1,4 @@
-import { Plus, Trash2, X } from 'lucide-react'
+import { Link2, Plus, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   useAddDependency,
@@ -24,6 +24,8 @@ import {
   useToast,
 } from '@/shared/ui'
 import { AssignmentSection } from './AssignmentSection'
+import { ChainDialog } from './ChainDialog'
+import { ChecklistSection } from './ChecklistSection'
 import styles from './taskPanel.module.css'
 
 export interface TaskPanelProps {
@@ -118,9 +120,11 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
   const [addingDep, setAddingDep] = useState(false)
   const [newPred, setNewPred] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [chainOpen, setChainOpen] = useState(false)
 
   if (!task || !schedule) return null
   const isSummary = schedule.isSummary
+  const derivedProgress = Boolean(task && task.checklist.length > 0 && task.progressFromChecklist)
   const ccpm = project.buffer.method === 'ccpm'
 
   const submitDep = async () => {
@@ -202,10 +206,12 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
                   placeholder={ccpm ? 'ถ้าราบรื่น กี่วัน' : 'กี่วัน'}
                 />
               </Field>
-              <Field label="ความคืบหน้า" htmlFor="tp-progress">
+              <Field label="ความคืบหน้า" htmlFor="tp-progress" hint={derivedProgress ? 'จากงานย่อย' : undefined}>
                 <NumberInput
                   id="tp-progress"
-                  value={progress}
+                  value={derivedProgress ? task.progress : progress}
+                  readOnly={derivedProgress}
+                  title={derivedProgress ? 'คำนวณจากงานย่อย ปิดสวิตช์ในส่วนงานย่อยถ้าอยากกรอกเอง' : undefined}
                   onChange={(v) => {
                     setProgress(v)
                     if (v !== '' && v >= 0 && v <= 100) queue({ progress: v })
@@ -258,6 +264,18 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
                   onChange={(e) => e.target.value && updateTask.mutate({ taskId, constraint: { type: 'SNET', date: e.target.value } })}
                 />
               )}
+            </div>
+          )}
+
+          {!isSummary && <ChecklistSection project={project} taskId={taskId} />}
+
+          {!isSummary && (
+            <div className={styles.section}>
+              <div className={styles.sectionTitle}>งานต่อเนื่อง</div>
+              <Button icon={<Link2 size={16} />} className={styles.chainBtn} onClick={() => setChainOpen(true)} data-testid="open-chain">
+                สร้างงานต่อจากงานนี้…
+              </Button>
+              <span className={styles.muted}>สร้างชุดงาน เช่น ออกแบบ UI → พัฒนา → ทดสอบ → deploy แล้วผูกลำดับให้อัตโนมัติ</span>
             </div>
           )}
 
@@ -344,6 +362,8 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
           </Button>
         </div>
       </aside>
+
+      {chainOpen && <ChainDialog project={project} taskId={taskId} open={chainOpen} onClose={() => setChainOpen(false)} />}
 
       <Dialog
         open={confirmDelete}

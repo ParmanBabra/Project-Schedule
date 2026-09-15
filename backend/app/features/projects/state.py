@@ -10,7 +10,15 @@ from datetime import date
 
 from pydantic import Field
 
-from app.core.models import Assignment, BufferSettings, CamelModel, Dependency, Rules, Task
+from app.core.models import (
+    Assignment,
+    BufferSettings,
+    CamelModel,
+    ChainStep,
+    Dependency,
+    Rules,
+    Task,
+)
 
 
 class ProjectState(CamelModel):
@@ -23,3 +31,4 @@ class ProjectState(CamelModel):
     assignments: list[Assignment] = Field(default_factory=list)
     buffer: BufferSettings = Field(default_factory=BufferSettings)
     rules: Rules = Field(default_factory=Rules)
+    chain_templates: list[ChainStep] | None = None

@@ -1,6 +1,10 @@
 {
   "pages": [
     {
+      "id": "tasks",
+      "name": "งานย่อย + งานต่อเนื่อง"
+    },
+    {
       "id": "settings",
       "name": "ตั้งค่า + Buffer + WBS"
     },
@@ -18,6 +22,42 @@
     }
   ],
   "artboards": [
+    {
+      "file": "TaskChecklist.dc.html",
+      "title": "Desktop · แผงงาน: งานย่อย (checklist)",
+      "x": 0,
+      "y": 0,
+      "w": 720,
+      "h": 840,
+      "page": "tasks"
+    },
+    {
+      "file": "ChainDialog.dc.html",
+      "title": "Desktop · สร้างงานต่อจากงานนี้",
+      "x": 820,
+      "y": 0,
+      "w": 760,
+      "h": 860,
+      "page": "tasks"
+    },
+    {
+      "file": "MobileChecklist.dc.html",
+      "title": "มือถือ · งานย่อยใน sheet",
+      "x": 0,
+      "y": 1000,
+      "w": 390,
+      "h": 844,
+      "page": "tasks"
+    },
+    {
+      "file": "MobileChain.dc.html",
+      "title": "มือถือ · สร้างงานต่อเนื่อง",
+      "x": 490,
+      "y": 1000,
+      "w": 390,
+      "h": 844,
+      "page": "tasks"
+    },
     {
       "file": "GanttBuffer.dc.html",
       "title": "Desktop · Gantt กลุ่มงาน + สำรองเวลา",
@@ -191,6 +231,6 @@
   ],
   "launch": {
     "view": "canvas",
-    "page": "settings"
+    "page": "tasks"
   }
 }

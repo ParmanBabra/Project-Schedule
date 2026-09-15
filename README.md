@@ -17,6 +17,10 @@ npm test         # pytest + vitest
 npm run test:e2e # playwright
 ```
 
+เข้าสู่ระบบครั้งแรกด้วย `admin` / `admin` เปลี่ยนได้ที่ `backend/config.json` (คัดลอกจาก `config.example.json`) หรือตัวแปรแวดล้อม `AUTH_USERNAME` / `AUTH_PASSWORD`
+
+นำขึ้นเว็บสาธารณะ: ดู [docs/deploy.md](docs/deploy.md) (`npm run build && npm run start` หรือ `docker compose up -d --build` พร้อม HTTPS อัตโนมัติ)
+
 ใน VS Code ใช้ Terminal → Run Task → `dev: all`
 
 ## เอกสาร

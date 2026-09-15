@@ -50,6 +50,23 @@ class Estimate(CamelModel):
     p: int = Field(ge=0)
 
 
+class ChecklistItem(CamelModel):
+    """Sub-item inside a task (TSK-8). Not a schedulable task: no dates, no dependencies."""
+
+    id: str
+    text: str = Field(min_length=1, max_length=300)
+    done: bool = False
+
+
+class ChainStep(CamelModel):
+    """A remembered row of the "create task chain" dialog (TSK-9)."""
+
+    name: str = Field(min_length=1, max_length=200)
+    duration: int = Field(default=1, ge=0, le=3650)
+    enabled: bool = True
+    parallel: bool = False  # starts together with the previous step (SS) instead of after it
+
+
 class Task(CamelModel):
     id: str
     name: str = Field(min_length=1, max_length=200)
@@ -62,6 +79,8 @@ class Task(CamelModel):
     collapsed: bool = False
     order: int = 0
     estimate: Estimate | None = None
+    checklist: list[ChecklistItem] = Field(default_factory=list)
+    progress_from_checklist: bool = True  # when checklist is non-empty: progress = done / total
 
 
 class Dependency(CamelModel):
@@ -139,6 +158,7 @@ class Project(CamelModel):
     buffer: BufferSettings = Field(default_factory=BufferSettings)
     rules: Rules = Field(default_factory=Rules)
     baseline: Baseline | None = None
+    chain_templates: list[ChainStep] | None = None  # last-used rows of the chain dialog
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
 

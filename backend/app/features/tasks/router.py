@@ -6,7 +6,7 @@ from app.features.projects.repository import ProjectRepository, get_repo
 from app.features.projects.schemas import ProjectOut
 
 from . import service
-from .schemas import DeleteMode, GroupBody, MoveBody, ReorderBody, TaskCreate, TaskUpdate
+from .schemas import ChainBody, DeleteMode, GroupBody, MoveBody, ReorderBody, TaskCreate, TaskUpdate
 
 router = APIRouter(prefix="/projects/{project_id}/tasks", tags=["tasks"])
 
@@ -54,3 +54,15 @@ def move(
     project_id: str, task_id: str, body: MoveBody, repo: ProjectRepository = Depends(get_repo)
 ) -> ProjectOut:
     return service.move(repo, project_id, task_id, body)
+
+
+@router.post("/{task_id}/chain", response_model=ProjectOut, status_code=status.HTTP_201_CREATED)
+def create_chain(
+    project_id: str,
+    task_id: str,
+    body: ChainBody,
+    dry_run: bool = Query(default=False, alias="dryRun"),
+    repo: ProjectRepository = Depends(get_repo),
+) -> ProjectOut:
+    """With dryRun=true the would-be project (incl. schedule) is returned but not saved."""
+    return service.create_chain(repo, project_id, task_id, body, dry_run)

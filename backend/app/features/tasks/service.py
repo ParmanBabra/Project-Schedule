@@ -2,13 +2,22 @@ from __future__ import annotations
 
 from app.core.errors import NotFound, ValidationFailed
 from app.core.ids import new_id
-from app.core.models import Project, Task
+from app.core.models import Assignment, ChecklistItem, Dependency, Project, Task
 from app.features.projects.repository import ProjectRepository
 from app.features.projects.schemas import ProjectOut
-from app.features.projects.service import validate_and_save
-from app.features.scheduling.engine import ancestors, build_tree
+from app.features.projects.service import apply_checklists, validate_and_save
+from app.features.scheduling.engine import ancestors, build_tree, compute_schedule
 
-from .schemas import DeleteMode, GroupBody, MoveBody, ReorderBody, TaskCreate, TaskUpdate
+from .schemas import (
+    ChainBody,
+    ChecklistItemIn,
+    DeleteMode,
+    GroupBody,
+    MoveBody,
+    ReorderBody,
+    TaskCreate,
+    TaskUpdate,
+)
 
 
 def _task(project: Project, task_id: str) -> Task:
@@ -73,10 +82,12 @@ def update_task(
 ) -> ProjectOut:
     project = repo.get(project_id)
     task = _task(project, task_id)
-    for key in body.model_fields_set - {"clear_constraint", "clear_estimate"}:
+    for key in body.model_fields_set - {"clear_constraint", "clear_estimate", "checklist"}:
         value = getattr(body, key)
         if value is not None:
             setattr(task, key, value)
+    if body.checklist is not None:
+        _apply_checklist(project, task, body.checklist)
     if body.clear_constraint:
         task.constraint = None
     if body.clear_estimate:
@@ -163,4 +174,109 @@ def move(repo: ProjectRepository, project_id: str, task_id: str, body: MoveBody)
         t.order = n
     if old_parent != body.parent_id:
         _renumber(project, old_parent)
+    return validate_and_save(repo, project)
+
+
+# ------------------------------------------------------------------ checklist (TSK-8)
+
+
+def _apply_checklist(project: Project, task: Task, items: list[ChecklistItemIn]) -> None:
+    used = {c.id for t in project.tasks for c in t.checklist if t.id != task.id}
+    out: list[ChecklistItem] = []
+    for it in items:
+        cid = it.id
+        if cid is None or cid in used or any(c.id == cid for c in out):
+            cid = new_id("c")
+            while cid in used or any(c.id == cid for c in out):
+                cid = new_id("c")
+        out.append(ChecklistItem(id=cid, text=it.text.strip(), done=it.done))
+    task.checklist = out
+
+
+# ------------------------------------------------------------------ chain (TSK-9)
+
+
+def _new_dep_id(project: Project) -> str:
+    ids = {d.id for d in project.dependencies}
+    did = new_id("d")
+    while did in ids:
+        did = new_id("d")
+    return did
+
+
+def create_chain(
+    repo: ProjectRepository, project_id: str, task_id: str, body: ChainBody, dry_run: bool = False
+) -> ProjectOut:
+    """Create the enabled steps after `task_id`, linked FS in order.
+
+    A step marked `parallel` starts together with the previous step (SS 0) and shares its
+    predecessors; the step after a parallel block waits for every task in the block (FS).
+    With `group_name` the source task and the new tasks become children of a new group.
+    """
+    project = repo.get(project_id)
+    source = _task(project, task_id)
+    if any(t.parent_id == task_id for t in project.tasks):
+        raise ValidationFailed("สร้างงานต่อจากกลุ่มงานไม่ได้ เลือกงานลูกแทน")
+    steps = [s for s in body.steps if s.enabled]
+    if not steps:
+        raise ValidationFailed("เลือกอย่างน้อย 1 ขั้นตอน")
+
+    parent_id = source.parent_id
+    if body.group_name:
+        group_task = Task(
+            id=_new_task_id(project), name=body.group_name, duration=0, parent_id=parent_id
+        )
+        group_task.order = source.order
+        for t in project.tasks:
+            if t.parent_id == parent_id and t.order >= source.order:
+                t.order += 1
+        project.tasks.append(group_task)
+        source.parent_id = group_task.id
+        source.order = 1
+        parent_id = group_task.id
+        _renumber(project, group_task.parent_id)
+
+    # make room right after the source among its (possibly new) siblings
+    for t in project.tasks:
+        if t.parent_id == parent_id and t.order > source.order and t.id != source.id:
+            t.order += len(steps)
+
+    source_assignments = [a for a in project.assignments if a.task_id == source.id]
+    prev_block: list[Task] = [source]  # what a sequential step waits for (FS)
+    cur_block: list[Task] = []  # steps running side by side; the next sequential step waits for all
+    for i, step in enumerate(steps):
+        name = f"{source.name} – {step.name}" if body.prefix_with_source else step.name
+        task = Task(
+            id=_new_task_id(project),
+            name=name,
+            duration=step.duration,
+            is_milestone=step.duration == 0,
+            parent_id=parent_id,
+        )
+        task.order = source.order + i + 1
+        project.tasks.append(task)
+        if not (step.parallel and cur_block):
+            if cur_block:
+                prev_block = cur_block
+            cur_block = []
+        for p in prev_block:
+            project.dependencies.append(
+                Dependency(id=_new_dep_id(project), **{"from": p.id}, to=task.id, type="FS")
+            )
+        cur_block.append(task)
+        if body.copy_assignees:
+            for a in source_assignments:
+                aid = new_id("a")
+                while any(x.id == aid for x in project.assignments):
+                    aid = new_id("a")
+                project.assignments.append(
+                    Assignment(id=aid, task_id=task.id, resource_id=a.resource_id, units=a.units)
+                )
+    _renumber(project, parent_id)
+    if body.remember:
+        project.chain_templates = list(body.steps)
+    if dry_run:
+        apply_checklists(project)
+        schedule = compute_schedule(project)
+        return ProjectOut(**project.model_dump(by_alias=False), schedule=schedule)
     return validate_and_save(repo, project)

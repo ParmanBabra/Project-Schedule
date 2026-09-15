@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from app.core.models import CamelModel, Constraint, Estimate
+from app.core.models import CamelModel, ChainStep, Constraint, Estimate
 
 
 class TaskCreate(CamelModel):
@@ -30,6 +30,28 @@ class TaskUpdate(CamelModel):
     collapsed: bool | None = None
     estimate: Estimate | None = None
     clear_estimate: bool = False
+    checklist: list[ChecklistItemIn] | None = None  # full replace (order = list order)
+    progress_from_checklist: bool | None = None
+
+
+class ChecklistItemIn(CamelModel):
+    id: str | None = None  # omitted for new items; the server assigns one
+    text: str = Field(min_length=1, max_length=300)
+    done: bool = False
+
+
+class ChainBody(CamelModel):
+    """Create a chain of tasks after `task_id` (TSK-9)."""
+
+    steps: list[ChainStep] = Field(
+        min_length=1
+    )  # rows as shown in the dialog; only enabled ones are created
+    prefix_with_source: bool = True  # "<source> – <step>"
+    group_name: str | None = Field(
+        default=None, min_length=1, max_length=200
+    )  # wrap source + steps in a new group
+    copy_assignees: bool = False
+    remember: bool = True  # store `steps` as the project's chain template
 
 
 class ReorderBody(CamelModel):

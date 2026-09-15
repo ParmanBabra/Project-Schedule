@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from '@/app/layout/AppShell'
+import { LoginPage } from '@/features/auth/LoginPage'
+import { RequireAuth } from '@/features/auth/RequireAuth'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
 import { GanttPage } from '@/features/gantt/GanttPage'
 import { CalendarPage } from '@/features/calendar/CalendarPage'
@@ -11,6 +13,8 @@ import { UiPage } from '@/dev/UiPage'
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<RequireAuth />}>
       <Route element={<AppShell />}>
         <Route path="/" element={<ProjectsPage />} />
         <Route path="/resources" element={<ResourcesPage />} />
@@ -18,6 +22,7 @@ export function AppRoutes() {
         <Route path="/p/:projectId/gantt" element={<GanttPage />} />
         <Route path="/p/:projectId/calendar" element={<CalendarPage />} />
         <Route path="/p/:projectId/settings" element={<SettingsPage />} />
+      </Route>
       </Route>
       <Route path="/dev/ui" element={<UiPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />

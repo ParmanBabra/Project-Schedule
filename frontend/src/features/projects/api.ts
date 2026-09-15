@@ -3,6 +3,7 @@ import { api } from '@/shared/api/client'
 import { toState, useHistory } from '@/features/history/store'
 import type {
   BufferSettings,
+  ChainBody,
   DependencyCreate,
   DependencyType,
   ProjectCreate,
@@ -178,4 +179,23 @@ export function useSaveBaseline(id: string) {
 
 export function useClearBaseline(id: string) {
   return useProjectMutation(() => api<ProjectOut>(`/projects/${id}/baseline`, { method: 'DELETE' }), id, false)
+}
+
+/** TSK-9: create a chain of tasks after `taskId`. */
+export function useCreateChain(id: string) {
+  return useProjectMutation(({ taskId, ...body }: ChainBody & { taskId: string }) =>
+    api<ProjectOut>(`/projects/${id}/tasks/${taskId}/chain`, { method: 'POST', body: JSON.stringify(body) }),
+    id,
+  )
+}
+
+/** Same call with dryRun: the would-be project (schedule included) without saving. */
+export function useChainPreview(id: string, taskId: string, body: ChainBody, enabled = true) {
+  return useQuery({
+    queryKey: ['chain-preview', id, taskId, body],
+    queryFn: () => api<ProjectOut>(`/projects/${id}/tasks/${taskId}/chain?dryRun=true`, { method: 'POST', body: JSON.stringify(body) }),
+    enabled,
+    staleTime: 30_000,
+    placeholderData: (prev) => prev,
+  })
 }

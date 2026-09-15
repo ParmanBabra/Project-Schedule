@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import base from '../playwright.config'
+import base, { STORAGE_STATE } from '../playwright.config'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const frontendDir = resolve(here, '..')
@@ -28,7 +28,8 @@ export default defineConfig({
   retries: 0,
   webServer: servers,
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    { name: 'setup', testDir: resolve(frontendDir, 'e2e'), testMatch: /auth\.setup\.ts/ },
+    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 }, storageState: STORAGE_STATE }, dependencies: ['setup'] },
+    { name: 'mobile', use: { ...devices['Pixel 7'], storageState: STORAGE_STATE }, dependencies: ['setup'] },
   ],
 })

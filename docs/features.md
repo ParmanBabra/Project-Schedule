@@ -143,6 +143,9 @@ POST   /api/projects/{id}/duplicate
 | TSK-5 | Milestone | duration = 0 แสดงเป็นเพชร |
 | TSK-6 | Constraint | ตั้งค่า "เริ่มไม่ก่อนวันที่" เมื่อลากงานใน Gantt |
 | TSK-7 | ค้นหา / กรอง | กรองตามชื่อ ผู้รับผิดชอบ เฉพาะ critical เฉพาะยังไม่เสร็จ |
+| TSK-8 | งานย่อย (checklist) | รายการติ๊กในแผงงาน เพิ่ม/แก้/ลบ/ลากเรียง ไม่ใช่งานใน Gantt เมื่อเปิดสวิตช์ % ของงาน = เสร็จ ÷ ทั้งหมด |
+| TSK-9 | สร้างงานต่อจากงานนี้ | เลือกขั้นตอน (ออกแบบ UI, พัฒนา FE/BE, ทดสอบ, UAT, Deploy หรือเพิ่มเอง) ระบบสร้างงานและผูก FS ตามลำดับ ขั้นตอนคู่ขนานเริ่มพร้อมกัน รวมเป็นกลุ่มได้ จำรายการต่อโปรเจกต์ |
+| AUTH-1 | เข้าสู่ระบบ | ผู้ใช้เดียว username/password ตั้งใน config (env หรือ backend/config.json) คุกกี้ session HttpOnly ทุก API ต้องล็อกอิน ยกเว้น health/login/me ออกจากระบบได้จาก header |
 
 API
 
@@ -521,4 +524,19 @@ GET    /api/settings/defaults          # default ทั้งหมดพร้�
 - **PNG** ทำในเบราว์เซอร์ด้วย html-to-image บนกล่อง `[data-testid=gantt-chart]` (pixelRatio 2, ข้าม web font ที่ข้ามโดเมน) ได้ภาพช่วงที่เลื่อนอยู่พร้อมคอลัมน์ชื่อ ไม่ต้องพึ่งเซิร์ฟเวอร์
 - **BUF-7** engine ตั้ง `buffer.paddingWarning`/`paddingNote` เมื่อใช้ ccpm และงานที่ "เริ่มแล้วจริง" (progress > 0, ถึงวันเริ่มแล้ว, ไม่ใช่ milestone) มีอย่างน้อย 3 งาน และเกิน 30% ของงานเหล่านั้นคืบหน้าเกินค่าคาดแบบ linear มากกว่า 30 จุดหรือเสร็จก่อนวันสิ้นสุด แสดงเป็นชิปเตือนบน Gantt (hover อ่านคำอธิบาย) และกล่องคำอธิบายใต้การ์ด Critical Chain ในหน้าตั้งค่า
 - **QA** สีข้อความรอง `--text-3` เปลี่ยนเป็น #716a91 เพื่อผ่าน WCAG AA (ตรวจอัตราส่วนคู่สีหลักทั้งหมดด้วยสคริปต์: text-2 5.15, primary 5.64, warn 4.25 บนพื้นเตือน, critical 4.91) คีย์บอร์ดมี e2e ครอบ N / Esc / Tab focus ring / Enter บนแถบ / Ctrl+Z · โปรเจกต์ 60 งานผ่าน `PUT /projects/{id}` ใช้เป็นชุดทดสอบใหญ่ใน e2e
+
+## 13. รายละเอียดที่สรุปตอนพัฒนา (งานย่อย TSK-8 และงานต่อเนื่อง TSK-9)
+
+- **โมเดล** `task.checklist: [{id, text, done}]`, `task.progressFromChecklist` (ค่าเริ่มต้น true), `project.chainTemplates` (แถวล่าสุดของกล่องสร้างงานต่อเนื่อง) ทั้งหมดอยู่ในไฟล์โปรเจกต์ ถูก undo/redo, export/import ตามปกติ
+- **API งานย่อย** ใช้ `PATCH /tasks/{id}` ส่ง `checklist` ทั้งรายการ (ลำดับ = ลำดับในรายการ) รายการที่ไม่มี id จะได้ id `c_…` จากเซิร์ฟเวอร์ · `validate_and_save` ทำให้ `progress = round(done/total)` ทุกครั้งที่บันทึกเมื่อสวิตช์เปิดและมีรายการ จึงไม่มีทางที่ % กับงานย่อยไม่ตรงกัน แก้ % เองได้เมื่อปิดสวิตช์ ลบรายการจนหมดแล้ว % คงค่าสุดท้าย
+- **API งานต่อเนื่อง** `POST /tasks/{id}/chain` body `{steps:[{name,duration,enabled,parallel}], prefixWithSource, groupName, copyAssignees, remember}` สร้างเฉพาะ `enabled` เรียงต่อจากงานต้นทางทันที (เลื่อน order ของงานถัดไป) ผูก FS จากบล็อกก่อนหน้า: ขั้นตอน `parallel` อยู่บล็อกเดียวกับขั้นตอนก่อนหน้าและใช้งานก่อนหน้าชุดเดียวกัน ขั้นตอนถัดไปรอทุกงานในบล็อก · `groupName` สร้างกลุ่มใหม่แทนที่ตำแหน่งงานต้นทาง ย้ายงานต้นทางเป็นลูกตัวแรก · `copyAssignees` คัดลอกการมอบหมายของงานต้นทาง (หน่วยเท่าเดิม) · `?dryRun=true` คืน ProjectOut ที่จะได้โดยไม่บันทึก ใช้ทำพรีวิว (วันเสร็จ, อยู่บน critical path ไหม) · ปฏิเสธเมื่อเรียกบนกลุ่มงานหรือไม่มีขั้นตอนที่เลือก
+- **UI** ส่วน "งานย่อย" และ "งานต่อเนื่อง" อยู่ระหว่างสวิตช์ milestone กับงานก่อนหน้าในแผงงาน (ไม่แสดงบนกลุ่มงาน) ช่องความคืบหน้าอ่านอย่างเดียวพร้อม hint "จากงานย่อย" เมื่อสวิตช์เปิด · กล่องสร้างงานต่อเนื่องเริ่มจาก `chainTemplates` ของโปรเจกต์ ถ้าไม่มีใช้ค่าเริ่มต้น 6 แถว (ออกแบบ UI 3, พัฒนา Frontend 5, พัฒนา Backend 5 คู่ขนาน, ทดสอบ 3, UAT 2 ไม่ติ๊ก, Deploy 1) พรีวิวเรียกดรายรันหน่วง 300 ms
+
+## 14. รายละเอียดที่สรุปตอนพัฒนา (AUTH-1 และการติดตั้งสาธารณะ)
+
+- **Config** `app/core/config.py` รวมค่าจาก env > `backend/config.json` > ค่าเริ่มต้น เป็น `Settings` (แคชต่อ process) ดูตาราง key ทั้งหมดใน `docs/deploy.md`
+- **Auth** `features/auth`: `POST /api/auth/login` ตรวจด้วย `secrets.compare_digest` แล้วตั้งคุกกี้ `phaengan_session` = `<exp>.<username>.<hmac>` (ไม่มี session store) · `GET /api/auth/me` · `POST /api/auth/logout` ลบคุกกี้ · throttle 5 ครั้ง/นาที/IP (in-memory) · `AuthGateMiddleware` ใน `app/core/web.py` ปฏิเสธ `/api/*` ที่ไม่มีคุกกี้ด้วย `{error:{code:"unauthorized"}}` ยกเว้น health/login/me และ OPTIONS · `AUTH_DISABLED` ใช้ในเทสต์ (conftest เปิดให้ทุกเทสต์ ยกเว้น fixture `auth_env`)
+- **Frontend** `features/auth`: `RequireAuth` ครอบทุก route ใต้ AppShell รอ `/auth/me` แล้วส่งไป `/login` พร้อม `state.from`; `api()` ส่ง `credentials: same-origin` และเรียก listener `onUnauthorized` เมื่อได้ 401 จาก endpoint อื่น (session หมดอายุกลางทาง) · ปุ่มออกจากระบบอยู่ขวาสุดของ header (desktop) และในเมนู ⋯ (มือถือ) ซ่อนเมื่อ `authDisabled`
+- **E2E** backend ของ Playwright รันด้วยล็อกอินเปิด (`e2e`/`e2e-password`) project `setup` ล็อกอินผ่าน API แล้วเก็บ storageState ที่ `frontend/.auth/state.json` ให้ desktop/mobile ใช้ · `login.spec.ts` และหน้าจอ `login*` เริ่มแบบไม่มี session (`noAuth` ใน screens.ts)
+- **Hosting** `mount_spa` เสิร์ฟ `STATIC_DIR` เมื่อมี: `/assets/*` แบบ static, path อื่นที่ไม่ใช่ `/api` ตอบ `index.html` (deep link ได้) ป้องกัน path traversal · `SecurityHeadersMiddleware`, GZip, ปิด `/docs` · Dockerfile หลายขั้น + `docker-compose.yml` + `deploy/Caddyfile` (HTTPS อัตโนมัติ) ดู `docs/deploy.md`
 
