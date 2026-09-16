@@ -6,6 +6,7 @@ from app.core.models import Assignment, ChecklistItem, Dependency, Project, Task
 from app.features.projects.repository import ProjectRepository
 from app.features.projects.schemas import ProjectOut
 from app.features.projects.service import apply_checklists, validate_and_save
+from app.features.releases.service import drop_releases_of
 from app.features.scheduling.engine import ancestors, build_tree, compute_schedule
 
 from .schemas import (
@@ -60,6 +61,7 @@ def add_task(repo: ProjectRepository, project_id: str, body: TaskCreate) -> Proj
         constraint=body.constraint,
         color=body.color,
         estimate=body.estimate,
+        description=body.description.strip(),
     )
     siblings = _siblings(project, body.parent_id)
     if body.after_id is not None:
@@ -87,10 +89,13 @@ def update_task(
         "clear_estimate",
         "clear_epic",
         "checklist",
+        "description",
     }:
         value = getattr(body, key)
         if value is not None:
             setattr(task, key, value)
+    if body.description is not None:
+        task.description = body.description.strip()
     if body.checklist is not None:
         _apply_checklist(project, task, body.checklist)
     if body.clear_epic:
@@ -126,6 +131,7 @@ def delete_task(
         d for d in project.dependencies if d.from_ not in removed and d.to not in removed
     ]
     project.assignments = [a for a in project.assignments if a.task_id not in removed]
+    drop_releases_of(project, removed)
     _renumber(project, task.parent_id)
     return validate_and_save(repo, project)
 

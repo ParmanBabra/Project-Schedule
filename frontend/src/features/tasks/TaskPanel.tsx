@@ -26,6 +26,7 @@ import {
 import { useCreateEpic } from '@/features/epics/api'
 import { epicsOf } from '@/features/epics/lib/epics'
 import { useMoveTask } from '@/features/projects/api'
+import { useCreateRelease, useDeleteRelease, useUpdateRelease } from '@/features/releases/api'
 import { AssignmentSection } from './AssignmentSection'
 import { ChainDialog } from './ChainDialog'
 import { ChecklistSection } from './ChecklistSection'
@@ -69,6 +70,7 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
   const [name, setName] = useState(task?.name ?? '')
   const [duration, setDuration] = useState<number | ''>(task?.duration ?? 1)
   const [progress, setProgress] = useState<number | ''>(task?.progress ?? 0)
+  const [description, setDescription] = useState(task?.description ?? '')
   const timer = useRef<number | null>(null)
   const pending = useRef<TaskUpdate>({})
 
@@ -76,6 +78,7 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
     setName(task?.name ?? '')
     setDuration(task?.duration ?? 1)
     setProgress(task?.progress ?? 0)
+    setDescription(task?.description ?? '')
     pending.current = {}
     if (timer.current) window.clearTimeout(timer.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -88,8 +91,9 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
     if (pending.current.duration === undefined) setDuration(task.duration)
     if (pending.current.progress === undefined) setProgress(task.progress)
     if (pending.current.name === undefined) setName(task.name)
+    if (pending.current.description === undefined) setDescription(task.description)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [task?.duration, task?.progress, task?.name])
+  }, [task?.duration, task?.progress, task?.name, task?.description])
 
   const flush = () => {
     const body = pending.current
@@ -166,7 +170,9 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
     }
   }
 
-  const floatChip = schedule.isCritical ? (
+  const floatChip = schedule.totalFloat < 0 ? (
+    <Chip tone="critical" title="กำหนดเสร็จ (ต้องเสร็จภายใน) เร็วกว่าที่แผนทำได้">เลยกำหนดเสร็จ {-schedule.totalFloat} วัน</Chip>
+  ) : schedule.isCritical ? (
     <Chip tone="critical">อยู่บน Critical path</Chip>
   ) : schedule.isNearCritical ? (
     <Chip tone="warn">ใกล้ critical · เลื่อนได้ {schedule.totalFloat} วัน</Chip>
@@ -258,6 +264,22 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
             </Field>
           </div>
 
+          <Field label="หมายเหตุ" htmlFor="tp-description" hint={description.length > 1800 ? `${description.length} / 2000` : undefined}>
+            <textarea
+              id="tp-description"
+              className={styles.textarea}
+              value={description}
+              maxLength={2000}
+              rows={3}
+              placeholder="รายละเอียด ข้อควรระวัง หรือลิงก์ที่เกี่ยวข้อง"
+              onChange={(e) => {
+                setDescription(e.target.value)
+                queue({ description: e.target.value.trim() }, 800)
+              }}
+              onBlur={flush}
+            />
+          </Field>
+
           {!isSummary && (
             <div className={styles.section}>
               <Toggle
@@ -265,8 +287,9 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
                 onChange={(v) => updateTask.mutate({ taskId, isMilestone: v, ...(v ? {} : { duration: Math.max(1, Number(duration) || 1) }) })}
                 label="เป็น milestone"
               />
+              {task.isMilestone && <ReleaseSection project={project} taskId={taskId} />}
               <Toggle
-                checked={task.constraint !== null}
+                checked={task.constraint?.type === 'SNET'}
                 onChange={(v) =>
                   v
                     ? updateTask.mutate({ taskId, constraint: { type: 'SNET', date: schedule.start } })
@@ -274,12 +297,31 @@ export function TaskPanel({ project, taskId, onClose, onSelect }: TaskPanelProps
                 }
                 label="เริ่มไม่ก่อนวันที่กำหนด"
               />
-              {task.constraint && (
+              {task.constraint?.type === 'SNET' && (
                 <DatePicker
                   aria-label="เริ่มไม่ก่อนวันที่"
                   value={task.constraint.date}
                   onChange={(v) => v && updateTask.mutate({ taskId, constraint: { type: 'SNET', date: v } })}
                 />
+              )}
+              <Toggle
+                checked={task.constraint?.type === 'FNLT'}
+                onChange={(v) =>
+                  v
+                    ? updateTask.mutate({ taskId, constraint: { type: 'FNLT', date: schedule.end } })
+                    : updateTask.mutate({ taskId, clearConstraint: true })
+                }
+                label="ต้องเสร็จภายในวันที่กำหนด"
+              />
+              {task.constraint?.type === 'FNLT' && (
+                <>
+                  <DatePicker
+                    aria-label="ต้องเสร็จภายในวันที่"
+                    value={task.constraint.date}
+                    onChange={(v) => v && updateTask.mutate({ taskId, constraint: { type: 'FNLT', date: v } })}
+                  />
+                  <div className={styles.hint}>งานก่อนหน้าทั้งสายจะถูกนับ float จากวันนี้ ถ้าแผนทำไม่ทันจะขึ้น "เลยกำหนดเสร็จ"</div>
+                </>
               )}
             </div>
           )}
@@ -472,3 +514,64 @@ function LagInput({ value, onCommit }: { value: number; onCommit: (lag: number) 
 }
 
 export type { Task }
+
+/** Milestone as a delivery point with its own buffer (BUF-8). */
+function ReleaseSection({ project, taskId }: { project: ProjectOut; taskId: string }) {
+  const toast = useToast()
+  const create = useCreateRelease(project.id)
+  const update = useUpdateRelease(project.id)
+  const remove = useDeleteRelease(project.id)
+  const release = project.releases.find((r) => r.milestoneTaskId === taskId)
+  const result = project.schedule.releases.find((r) => r.milestoneTaskId === taskId)
+  const [name, setName] = useState(release?.name ?? '')
+  const [days, setDays] = useState<number | ''>(release?.days ?? '')
+  useEffect(() => {
+    setName(release?.name ?? '')
+    setDays(release?.days ?? '')
+  }, [release?.id, release?.name, release?.days])
+  const fail = (e: unknown) => toast.error(apiMessage(e, 'บันทึกจุดส่งมอบไม่สำเร็จ'))
+  const task = project.tasks.find((t) => t.id === taskId)
+  return (
+    <div className={styles.section} data-testid="release-section">
+      <Toggle
+        checked={Boolean(release)}
+        onChange={(v) => (v ? create.mutate({ name: task?.name ?? 'ส่งมอบ', milestoneTaskId: taskId }, { onError: fail }) : release && remove.mutate(release.id, { onError: fail }))}
+        label="จุดส่งมอบ มีเวลาเผื่อของตัวเอง"
+      />
+      {!release && <div className={styles.hint}>งานที่ป้อนเข้า milestone นี้จะถูกเผื่อเวลาแยกเป็นก้อนของตัวเอง เช่น ส่งมอบสิ้นปีนี้ กับสิ้นปีหน้า</div>}
+      {release && (
+        <>
+          <Field label="ชื่อจุดส่งมอบ" htmlFor="tp-release-name">
+            <Input
+              id="tp-release-name"
+              value={name}
+              maxLength={120}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={() => (name.trim() && name.trim() !== release.name ? update.mutate({ releaseId: release.id, name: name.trim() }, { onError: fail }) : setName(release.name))}
+            />
+          </Field>
+          <Field label="เวลาเผื่อ" htmlFor="tp-release-days" hint={release.days === null ? `คำนวณให้ ${result?.days ?? 0} วัน จากสายงาน ${result?.chainDays ?? 0} วัน` : 'กำหนดเอง · ล้างช่องเพื่อให้ระบบคำนวณ'}>
+            <NumberInput
+              id="tp-release-days"
+              value={days}
+              min={0}
+              max={3650}
+              suffix="วัน"
+              placeholder={String(result?.days ?? 0)}
+              onChange={setDays}
+              onBlur={() => {
+                if (days === '' && release.days !== null) update.mutate({ releaseId: release.id, clearDays: true }, { onError: fail })
+                else if (days !== '' && days !== release.days) update.mutate({ releaseId: release.id, days }, { onError: fail })
+              }}
+            />
+          </Field>
+          {result && (
+            <div className={styles.hint} data-testid="release-summary">
+              {result.taskIds.length} งาน · เสร็จตามแผน {formatThai(result.plannedEnd, { year: true })} · สัญญาส่ง {formatThai(result.committedEnd, { year: true })}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}

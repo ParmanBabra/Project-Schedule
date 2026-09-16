@@ -38,9 +38,24 @@ describe('GanttPage', () => {
     expect(screen.getByText('สำรองเวลาโครงการ')).toBeInTheDocument()
   })
 
+  it('with releases the toolbar shows one chip per delivery point instead of the project dates', async () => {
+    const p = sampleProject()
+    p.releases = [{ id: 'rel_01', name: 'ปีนี้', milestoneTaskId: 't2', days: null }, { id: 'rel_02', name: 'ปีหน้า', milestoneTaskId: 't6', days: null }]
+    const base = { id: 'rel_01', name: 'ปีนี้', milestoneTaskId: 't2', taskIds: ['t1', 't2'], chainDays: 8, days: 4, plannedEnd: '2026-09-23', end: '2026-09-29', committedEnd: '2026-09-29', progress: 62, chainProgress: 62, chainTaskIds: [], consumedPercent: null, consumedDays: null, status: null, aheadDays: 0, percentUsed: 50, note: null }
+    p.schedule.releases = [base, { ...base, id: 'rel_02', name: 'ปีหน้า', milestoneTaskId: 't6', taskIds: ['t3', 't4', 't5', 't6'], chainDays: 14, days: 7, plannedEnd: '2026-10-06', end: '2026-10-15', committedEnd: '2026-10-19', progress: 10, chainProgress: 10, chainTaskIds: [], consumedPercent: 40, status: 'red' as const }]
+    vi.stubGlobal('fetch', vi.fn(mockFetch({ 'GET /projects/prj_sample': () => p })))
+    renderGantt()
+    await screen.findByTestId('task-row-t1')
+    expect(screen.queryByTestId('chip-dates')).toBeNull()
+    expect(screen.queryByTestId('chip-buffer')).toBeNull()
+    expect(screen.getByTestId('chip-release-rel_01')).toHaveTextContent('ปีนี้ · ส่ง 29 ก.ย. · เผื่อ 4 วัน')
+    expect(screen.getByTestId('chip-release-rel_02')).toHaveTextContent('ปีหน้า · ส่ง 19 ต.ค. · เผื่อ 7 วัน · ใช้ไป 40%')
+    expect(screen.getByTestId('release-buffer-rel_02')).toBeInTheDocument()
+  })
+
   it('marks the buffer chip as locked once a baseline exists and explains why', async () => {
     const p = sampleProject()
-    p.baseline = { savedAt: '2026-09-15T04:31:25Z', plannedEnd: '2026-10-28', chainDays: 42, bufferDays: 21, tasks: {} }
+    p.baseline = { savedAt: '2026-09-15T04:31:25Z', plannedEnd: '2026-10-28', chainDays: 42, bufferDays: 21, tasks: {}, releases: {} }
     p.schedule.buffer.days = 21
     vi.stubGlobal('fetch', vi.fn(mockFetch({ 'GET /projects/prj_sample': () => p })))
     renderGantt()

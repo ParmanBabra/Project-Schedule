@@ -42,7 +42,7 @@ describe('GanttPage undo/redo and shortcuts', () => {
     await userEvent.keyboard('{Control>}z{/Control}')
     await waitFor(() => expect(put).toHaveBeenCalledTimes(1))
     const body = JSON.parse((put.mock.calls[0] as unknown as [RequestInit])[0].body as string)
-    expect(Object.keys(body).sort()).toEqual(['assignments', 'buffer', 'dependencies', 'holidays', 'name', 'rules', 'startDate', 'tasks', 'workingDays'])
+    expect(Object.keys(body).sort()).toEqual(['assignments', 'buffer', 'dependencies', 'holidays', 'name', 'releases', 'rules', 'startDate', 'tasks', 'workingDays'])
     expect(body.tasks.find((t: { id: string }) => t.id === 't4').collapsed).toBe(false)
     await waitFor(() => expect(screen.getByRole('button', { name: /ทำซ้ำ/ })).toBeEnabled())
 

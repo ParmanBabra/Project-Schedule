@@ -110,7 +110,7 @@ const css2 = css + `
   .glines { position: absolute; inset: 56px 0 0 0; background: repeating-linear-gradient(90deg, transparent 0 139px, #f1eff8 139px 140px); }
   .ghead { height: 56px; border-bottom: 1px solid #ece9f6; display: flex; } .ghead span { width: 140px; flex-shrink: 0; border-right: 1px solid #ece9f6; padding: 8px; font-size: 12px; color: #4e37b0; font-weight: 500; }
   .gbar { position: absolute; height: 24px; border-radius: 999px; display: flex; align-items: center; padding: 0 10px; font-size: 11px; font-weight: 500; color: #ffffff; white-space: nowrap; overflow: hidden; }
-  .gbar.task { background: var(--c); } .gbar.task.light { color: #1f2a44; } .gbar .pgf { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0,0,0,0.14); } .gbar span { position: relative; }
+  .gbar.task { background: var(--c); } .gbar.task.crit { box-shadow: inset 0 0 0 2px #e0457b; } .gbar.task.light { color: #1f2a44; } .gbar .pgf { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0,0,0,0.14); } .gbar span { position: relative; }
   .esum { position: absolute; height: 12px; border-radius: 4px; background: var(--c); } .esum::before, .esum::after { content: ""; position: absolute; top: 10px; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid var(--c); } .esum::before { left: -1px; } .esum::after { right: -1px; }
   .etag { position: absolute; font-size: 11px; color: #4e37b0; white-space: nowrap; }
   .epanel { width: 340px; background: #ffffff; border-left: 1px solid #ece9f6; display: flex; flex-direction: column; gap: 12px; padding: 18px; flex-shrink: 0; }
@@ -231,7 +231,7 @@ const rowsG = [
   ['2','Picking list',true,'#e0457b'],['2.1','Picking list',false,'#e0457b'],['2.2','Plant Route (Mobile)',false,'#e0457b'],['2.3','Confirm',false,'#e0457b'],['2.4','Import LMS',false,'#e0457b'],['2.5','Import Due list',false,'#e0457b'],
 ];
 const bars = [
-  [0,0,3,true],[1,0,1.4,false,60],[2,1.4,1.2,false,20],[3,2.2,0.8,false,0],
+  [0,0,3,true],[1,0,1.4,false,60,true],[2,1.4,1.2,false,20,true],[3,2.2,0.8,false,0,true],
   [4,3,4,true],[5,3,0.8,false,100],[6,3.8,1.2,false,40],[7,5,0.6,false,0],[8,5.6,0.9,false,0],[9,6.4,0.6,false,0],
 ];
 const ganttEpic = `<div style="padding:16px;display:flex;flex-direction:column;gap:12px;height:100%">
@@ -245,7 +245,7 @@ const ganttEpic = `<div style="padding:16px;display:flex;flex-direction:column;g
     <div class="gr">
       <div class="ghead">${['14 – 20 ก.ย.','21 – 27 ก.ย.','28 ก.ย. – 4 ต.ค.','5 – 11 ต.ค.','12 – 18 ต.ค.','19 – 25 ต.ค.','26 ต.ค. – 1 พ.ย.','2 – 8 พ.ย.'].map(w=>`<span>${w}</span>`).join('')}</div>
       <div class="glines"></div>
-      ${bars.map(([r,s,len,sum,pg]) => { const c = rowsG[r][3]; const top = 56 + r*40 + (sum?14:8); const left = s*140+6, width = len*140-12; return sum ? `<div class="esum" style="left:${left}px;width:${width}px;top:${top}px;--c:${c}"></div>` : `<div class="gbar task" style="left:${left}px;width:${width}px;top:${top}px;--c:${c}"><div class="pgf" style="width:${pg}%"></div><span>${rowsG[r][1]}</span></div>`; }).join('')}
+      ${bars.map(([r,s,len,sum,pg,crit]) => { const c = rowsG[r][3]; const top = 56 + r*40 + (sum?14:8); const left = s*140+6, width = len*140-12; return sum ? `<div class="esum" style="left:${left}px;width:${width}px;top:${top}px;--c:${c}"></div>` : `<div class="gbar task${crit?' crit':''}" style="left:${left}px;width:${width}px;top:${top}px;--c:${c}"><div class="pgf" style="width:${pg}%"></div><span>${rowsG[r][1]}</span></div>`; }).join('')}
     </div>
     <div class="epanel">
       <div class="panel-head"><div><div class="crumb">Epic · 5 งาน</div><h2 style="display:flex;align-items:center;gap:8px"><span class="epdot" style="background:#e0457b;width:14px;height:14px"></span>Picking list</h2></div><div class="iconbtn">${I.x(16)}</div></div>

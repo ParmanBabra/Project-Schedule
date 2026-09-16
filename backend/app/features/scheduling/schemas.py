@@ -51,6 +51,47 @@ class BufferResult(CamelModel):
     padding_note: str | None = None
 
 
+class ReleaseResult(CamelModel):
+    """Buffer of one release (BUF-8). Dates follow the plan; committed_end is frozen at baseline."""
+
+    id: str
+    name: str
+    milestone_task_id: str
+    task_ids: list[str]
+    chain_days: int  # working days from the first task of the release to its milestone
+    days: int
+    planned_end: date | None
+    end: date | None  # last day of the buffer
+    committed_end: date | None
+    progress: int  # rolled progress of the release's tasks
+    chain_progress: int = 0  # rolled progress of the release's own critical chain
+    chain_task_ids: list[str] = []  # longest path inside the release (its critical chain)
+    consumed_percent: int | None = None
+    consumed_days: int | None = None
+    status: str | None = None  # green | yellow | red (only with a baseline)
+    ahead_days: int = 0
+    percent_used: int | None = None
+    note: str | None = None
+
+
+class FeedingBuffer(CamelModel):
+    """Where a non-critical chain joins the critical chain (BUF-6, ccpm only).
+
+    The chain feeding `to_task_id` should keep `days` of slack before the critical task;
+    `available_days` is the float it actually has, `ok` says whether that is enough.
+    """
+
+    from_task_id: str
+    to_task_id: str
+    dependency_id: str | None = None
+    chain_days: int
+    days: int
+    available_days: int
+    ok: bool
+    start: date | None = None  # first day of the buffer (the day after the feeding task ends)
+    end: date | None = None
+
+
 class ScheduleSummary(CamelModel):
     task_count: int
     critical_count: int
@@ -68,3 +109,5 @@ class Schedule(CamelModel):
     critical_path: list[str]
     summary: ScheduleSummary
     buffer: BufferResult
+    releases: list[ReleaseResult] = []
+    feeding_buffers: list[FeedingBuffer] = []

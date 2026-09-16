@@ -31,6 +31,7 @@ const css = `
   .field { display: flex; flex-direction: column; gap: 6px; } .label { font-size: 12px; color: #716a91; font-weight: 500; display: flex; align-items: center; gap: 6px; } .label .r { margin-left: auto; font-weight: 400; }
   .input { height: 40px; border-radius: 12px; background: #f2f0fa; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; } .input.ro { color: #6f6893; } .input .sfx { color: #716a91; font-size: 12px; }
   .hint { font-size: 11px; color: #716a91; }
+  .input.ta { height: auto; min-height: 72px; align-items: flex-start; padding: 10px 12px; line-height: 1.45; font-size: 14px; }
   .btn { height: 40px; padding: 0 16px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500; background: #ffffff; color: #2f2a4a; box-shadow: 0 1px 2px rgba(47,42,74,0.08); } .btn.primary { background: #2f2a4a; color: #ffffff; box-shadow: 0 6px 16px rgba(47,42,74,0.18); } .btn.ghost { background: #f2f0fa; box-shadow: none; } .btn.sm { height: 36px; font-size: 12px; padding: 0 12px; } .btn.danger { color: #b8285a; background: #f2f0fa; box-shadow: none; }
   .sec { display: flex; flex-direction: column; gap: 8px; }
   .sec-head { display: flex; align-items: center; gap: 8px; } .sec-head h3 { flex: 1; }
@@ -131,6 +132,7 @@ const panelDesktop = `<div style="padding:20px;display:flex;gap:20px;align-items
     <div class="field"><div class="label">เริ่ม</div><div class="input ro">17 ก.ย. 2569</div></div>
     <div class="field"><div class="label">สิ้นสุด</div><div class="input ro">23 ก.ย. 2569</div></div>
   </div>
+  <div class="field"><div class="label">หมายเหตุ</div><div class="input ta">ประสานทีมคลังเรื่องโซนวางสินค้าก่อนเริ่ม · อ้างอิง SOP-12</div></div>
   ${checklistSection}
   <div class="sec">
     <div class="sec-head"><h3>งานต่อเนื่อง</h3></div>
@@ -200,6 +202,7 @@ const mobileChecklist = `<div class="phone">
         <div class="field"><div class="label">ระยะเวลา</div><div class="input">5 <span class="sfx">วัน</span></div></div>
         <div class="field"><div class="label">ความคืบหน้า <span class="r">จากงานย่อย</span></div><div class="input ro">40 <span class="sfx">%</span></div></div>
       </div>
+      <div class="field"><div class="label">หมายเหตุ</div><div class="input ta" style="color:#a49dc0">รายละเอียด ข้อควรระวัง หรือลิงก์ที่เกี่ยวข้อง</div></div>
       ${checklistSection.replace('พิมพ์แล้ว Enter', 'แตะเพื่อพิมพ์')}
       <div class="sec">
         <div class="btn" style="justify-content:center">${I.chain(16)}<span>สร้างงานต่อจากงานนี้…</span></div>

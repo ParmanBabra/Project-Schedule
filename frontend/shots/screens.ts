@@ -1,5 +1,5 @@
 import type { APIRequestContext, Page } from '@playwright/test'
-import { seedEpics, seedResources, seedSampleProject } from './seed'
+import { seedEpics, seedReleases, seedResources, seedSampleProject } from './seed'
 
 /**
  * Registry of every screen/state that design review and visual regression cover.
@@ -91,7 +91,47 @@ export const screens: Screen[] = [
     mockup: { desktop: 'CreateEpic' },
     setup: async (page) => { await page.getByRole('button', { name: 'สร้าง Epic' }).first().click(); const d = page.getByRole('dialog', { name: 'สร้าง Epic' }); await d.getByLabel('ชื่อ Epic').fill('Interface Automated WH'); for (const [i, n] of ['Create Task', 'Update Task', 'Delete Task'].entries()) { await d.getByLabel(`ชื่องานที่ ${i + 1}`).fill(n); if (i < 2) await d.getByLabel(`ชื่องานที่ ${i + 1}`).press('Enter') } },
   },
+  {
+    name: 'gantt-task-description',
+    path: ganttTasks,
+    setup: async (page) => {
+      await page.locator('[data-testid^="bar-"]').filter({ hasText: 'พัฒนา Backend' }).click()
+      const note = page.getByLabel('หมายเหตุ')
+      await note.fill('ประสานทีมคลังเรื่องโซนวางสินค้าก่อนเริ่ม · อ้างอิง SOP-12')
+      await note.blur()
+      await page.waitForTimeout(400)
+    },
+  },
+  {
+    name: 'gantt-releases',
+    path: async (r) => `/p/${await seedReleases(r)}/gantt`,
+    mockup: { desktop: 'GanttReleases' },
+    setup: async (page) => { await page.getByRole('radio', { name: 'สัปดาห์' }).click() },
+  },
+  {
+    name: 'gantt-release-panel',
+    path: async (r) => `/p/${await seedReleases(r)}/gantt`,
+    setup: async (page) => {
+      await page.getByRole('radio', { name: 'สัปดาห์' }).click()
+      await page.getByTestId(/^task-row-/).filter({ hasText: 'ส่งมอบเฟส 1' }).getByRole('button', { name: /ส่งมอบเฟส 1/ }).click()
+      await page.getByTestId('release-section').waitFor()
+    },
+  },
   { name: 'gantt-task-list', path: gantt, setup: async (page) => { await page.getByRole('button', { name: 'รายการงาน' }).click() } },
+  {
+    name: 'gantt-namecol-wide',
+    path: gantt,
+    setup: async (page) => {
+      // drag the name-column handle 140px to the right, keep the mouse there so the handle stays highlighted
+      const handle = page.getByRole('separator', { name: 'ปรับความกว้างคอลัมน์ชื่องาน' })
+      const box = (await handle.boundingBox())!
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+      await page.mouse.down()
+      await page.mouse.move(box.x + box.width / 2 + 140, box.y + box.height / 2, { steps: 5 })
+      await page.mouse.up()
+      await page.waitForTimeout(200)
+    },
+  },
   {
     name: 'gantt-dragging',
     path: gantt,
@@ -130,7 +170,7 @@ export const screens: Screen[] = [
 ]
 
 /** Mockup artboards rendered for side-by-side reference (design/*.dc.html). */
-export const mockups = ['Layout2', 'Layout3', 'GanttBuffer', 'SettingsDesktop', 'SettingsMobile', 'MobileGantt', 'MobileTaskSheet', 'MobileCalendar', 'TaskChecklist', 'ChainDialog', 'MobileChecklist', 'MobileChain', 'TopicEntry', 'TopicDialog', 'TopicPaste', 'MobileTopic', 'TopicSelect', 'TopicPanel', 'EpicsPage', 'GanttEpic', 'CreateEpic', 'MobileEpics']
+export const mockups = ['Layout2', 'Layout3', 'GanttBuffer', 'SettingsDesktop', 'SettingsMobile', 'MobileGantt', 'MobileTaskSheet', 'MobileCalendar', 'TaskChecklist', 'ChainDialog', 'MobileChecklist', 'MobileChain', 'TopicEntry', 'TopicDialog', 'TopicPaste', 'MobileTopic', 'TopicSelect', 'TopicPanel', 'EpicsPage', 'GanttEpic', 'CreateEpic', 'MobileEpics', 'GanttReleases']
 
 export async function resolvePath(screen: Screen, request: APIRequestContext): Promise<string> {
   return typeof screen.path === 'string' ? screen.path : screen.path(request)

@@ -155,3 +155,26 @@ async function seedEpicsUnlocked(request: APIRequestContext, name: string): Prom
   await request.patch(`/api/projects/${pid}/tasks/${byName['Report Stock Location']}`, { data: { progress: 60 } })
   return pid
 }
+
+/** The sample project split into two delivery points (BUF-8); reused across runs. */
+export function seedReleases(request: APIRequestContext, name = 'ระบบจองห้องประชุม (จุดส่งมอบ)'): Promise<string> {
+  return withLock(`project:${name}`, () => seedReleasesUnlocked(request, name))
+}
+
+async function seedReleasesUnlocked(request: APIRequestContext, name: string): Promise<string> {
+  const pid = await seedSampleProjectUnlocked(request, name, { assignments: false })
+  const p = await (await request.get(`/api/projects/${pid}`)).json()
+  if (p.releases?.length >= 2) return pid
+  const byName = Object.fromEntries(p.tasks.map((t: { name: string; id: string }) => [t.name, t.id]))
+  const milestone = async (label: string, after: string) => {
+    const body = await (await request.post(`/api/projects/${pid}/tasks`, { data: { name: label, duration: 0, isMilestone: true } })).json()
+    const id = body.tasks.find((t: { name: string }) => t.name === label).id as string
+    await request.post(`/api/projects/${pid}/dependencies`, { data: { from: byName[after], to: id } })
+    return id
+  }
+  const m1 = await milestone('ส่งมอบเฟส 1', 'ออกแบบ UI')
+  const m2 = await milestone('ส่งมอบเฟส 2', 'ทดสอบระบบ')
+  await request.post(`/api/projects/${pid}/releases`, { data: { name: 'เฟส 1 · ออกแบบ', milestoneTaskId: m1 } })
+  await request.post(`/api/projects/${pid}/releases`, { data: { name: 'เฟส 2 · ส่งมอบระบบ', milestoneTaskId: m2 } })
+  return pid
+}

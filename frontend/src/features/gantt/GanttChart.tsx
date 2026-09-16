@@ -1,8 +1,10 @@
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import type { ProjectOut, Schedule, TaskSchedule } from '@/features/projects/types'
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import type { ProjectOut, ReleaseResult, Resource, Schedule, TaskSchedule } from '@/features/projects/types'
+import { Avatar } from '@/shared/ui'
 import { formatThai, todayISO } from '@/shared/lib/date'
 import { DRAG_THRESHOLD_PX, moveTarget, resizeTarget, snapDays, type DragMode, type DragState } from './lib/drag'
+import { NAME_COL_MAX, NAME_COL_MIN, NAME_COL_STEP, clampNameColWidth, defaultNameColWidth, readNameColWidth, writeNameColWidth } from './lib/nameCol'
 import { buildOutline, epicColors, rowIndexMap } from './lib/outline'
 import {
   BAR_HEIGHT,
@@ -51,9 +53,20 @@ export interface GanttChartProps {
   selectable?: boolean
   selectedIds?: Set<string>
   onToggleSelected?: (id: string, on: boolean) => void
+  /** resources of the workspace: assignees are drawn as avatars after each bar (ASG on Gantt) */
+  resources?: Resource[]
+  /** resource ids currently over-allocated (red ring on their avatar) */
+  overloadedResourceIds?: ReadonlySet<string>
 }
 
-const NAME_COL = 220
+/** avatars shown after a bar before collapsing into "+N" */
+const MAX_AVATARS = 3
+/** gap between the bar end (and its link handle) and the first avatar */
+const AVATAR_GAP = 20
+
+function isMobile(): boolean {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 767px)').matches
+}
 
 export function GanttChart({
   project,
@@ -74,6 +87,8 @@ export function GanttChart({
   selectable = false,
   selectedIds,
   onToggleSelected,
+  resources,
+  overloadedResourceIds,
 }: GanttChartProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const timeRef = useRef<HTMLDivElement>(null)
@@ -85,9 +100,68 @@ export function GanttChart({
   const rowIndex = useMemo(() => rowIndexMap(project, rows), [project, rows])
   const today = todayISO()
   const todayX = today >= axis.origin && today < axis.end ? xOfDate(axis, today) : null
-  const hasBuffer = project.schedule.buffer.days > 0 && project.schedule.summary.plannedEnd
+  const hasReleases = project.schedule.releases.length > 0
+  const hasBuffer = hasReleases || (project.schedule.buffer.days > 0 && project.schedule.summary.plannedEnd)
   const bodyHeight = (rows.length + (hasBuffer ? 1 : 0)) * ROW_HEIGHT
   const cal = useMemo(() => ({ workingDays: project.workingDays, holidays: project.holidays }), [project.workingDays, project.holidays])
+
+  // --------------------------------------------------------------- assignees
+  const assigneesByTask = useMemo(() => {
+    const byId = new Map((resources ?? []).map((r) => [r.id, r]))
+    const map = new Map<string, { resource: Resource; units: number }[]>()
+    for (const a of project.assignments) {
+      const resource = byId.get(a.resourceId)
+      if (!resource) continue
+      const list = map.get(a.taskId) ?? []
+      list.push({ resource, units: a.units })
+      map.set(a.taskId, list)
+    }
+    return map
+  }, [project.assignments, resources])
+
+  /** feeding buffer drawn after a task (BUF-6): the avatars move past it */
+  const feedingEndByTask = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const fb of (previewSchedule ?? project.schedule).feedingBuffers) if (fb.end) m.set(fb.fromTaskId, fb.end)
+    return m
+  }, [previewSchedule, project.schedule])
+
+  // -------------------------------------------------------- name column width
+  /** null = never resized → responsive default from tokens.css */
+  const [nameColStored, setNameColStored] = useState<number | null>(() => readNameColWidth())
+  const nameCol = nameColStored ?? defaultNameColWidth(isMobile())
+  const setNameCol = (px: number | null) => {
+    const v = px === null ? null : clampNameColWidth(px)
+    setNameColStored(v)
+    writeNameColWidth(v)
+  }
+  const colDrag = useRef<{ startX: number; startW: number } | null>(null)
+  const [colResizing, setColResizing] = useState(false)
+  const beginColResize = (e: ReactPointerEvent<HTMLElement>) => {
+    if (e.button !== 0) return
+    e.preventDefault()
+    colDrag.current = { startX: e.clientX, startW: nameCol }
+    setColResizing(true)
+    e.currentTarget.setPointerCapture?.(e.pointerId)
+  }
+  const moveColResize = (e: ReactPointerEvent<HTMLElement>) => {
+    const d = colDrag.current
+    if (!d) return
+    setNameCol(d.startW + (e.clientX - d.startX))
+  }
+  const endColResize = () => {
+    colDrag.current = null
+    setColResizing(false)
+  }
+  const keyColResize = (e: ReactKeyboardEvent<HTMLElement>) => {
+    if (e.key === 'ArrowLeft') setNameCol(nameCol - NAME_COL_STEP)
+    else if (e.key === 'ArrowRight') setNameCol(nameCol + NAME_COL_STEP)
+    else if (e.key === 'Home') setNameCol(NAME_COL_MIN)
+    else if (e.key === 'End') setNameCol(NAME_COL_MAX)
+    else if (e.key === 'Enter' || e.key === 'Escape') setNameCol(null)
+    else return
+    e.preventDefault()
+  }
 
   // ------------------------------------------------------------------ scroll
   const scrollTo = (target: 'today' | 'start') => {
@@ -261,12 +335,35 @@ export function GanttChart({
   const barTop = (idx: number) => idx * ROW_HEIGHT + (ROW_HEIGHT - BAR_HEIGHT) / 2
 
   return (
-    <div ref={scrollRef} className={styles.chart} data-testid="gantt-chart" style={{ ['--h-row' as string]: `${ROW_HEIGHT}px` }}>
-      <div className={styles.inner} style={{ width: NAME_COL + axis.width }}>
+    <div
+      ref={scrollRef}
+      className={[styles.chart, colResizing && styles.chartResizing].filter(Boolean).join(' ')}
+      data-testid="gantt-chart"
+      style={{ ['--h-row' as string]: `${ROW_HEIGHT}px`, ['--w-namecol' as string]: `${nameCol}px` }}
+    >
+      <div className={styles.inner} style={{ width: nameCol + axis.width }}>
         <div className={styles.headerRow}>
           <div className={styles.nameHead}>
             <span className={styles.wbs}>WBS</span>
             <span>ชื่องาน</span>
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="ปรับความกว้างคอลัมน์ชื่องาน"
+              aria-valuemin={NAME_COL_MIN}
+              aria-valuemax={NAME_COL_MAX}
+              aria-valuenow={nameCol}
+              tabIndex={0}
+              title="ลากเพื่อปรับความกว้าง · ดับเบิลคลิกคืนค่าเดิม"
+              data-testid="namecol-resizer"
+              className={[styles.colResizer, colResizing && styles.colResizerActive].filter(Boolean).join(' ')}
+              onPointerDown={beginColResize}
+              onPointerMove={moveColResize}
+              onPointerUp={endColResize}
+              onPointerCancel={endColResize}
+              onDoubleClick={() => setNameCol(null)}
+              onKeyDown={keyColResize}
+            />
           </div>
           <div className={styles.timeHead} style={{ width: axis.width }}>
             <div className={styles.hTop}>
@@ -339,7 +436,7 @@ export function GanttChart({
               <div className={[styles.nameRow, styles.bufferName].join(' ')}>
                 <span className={styles.wbs} />
                 <span className={styles.caretSpace} />
-                <span className={styles.name}>สำรองเวลาโครงการ</span>
+                <span className={styles.name}>{hasReleases ? `สำรองเวลา · ${project.schedule.releases.length} จุด` : 'สำรองเวลาโครงการ'}</span>
               </div>
             )}
           </div>
@@ -440,8 +537,9 @@ export function GanttChart({
                     title={`${r.task.name} · ${formatThai(s.start)} – ${formatThai(s.end, { year: true })} · float ${s.totalFloat} วัน`}
                     className={[
                       styles.bar,
-                      crit(s.isCritical) && styles.barCritical,
-                      highlightCritical && s.isNearCritical && styles.barNear,
+                      epicColor.has(r.task.id) && styles.barEpic,
+                      crit(s.isCritical) && (epicColor.has(r.task.id) ? styles.barCriticalEpic : styles.barCritical),
+                      highlightCritical && s.isNearCritical && (epicColor.has(r.task.id) ? styles.barNearEpic : styles.barNear),
                       r.task.progress >= 100 && styles.barDone,
                       selected && styles.barSel,
                       preview && styles.previewBar,
@@ -450,7 +548,7 @@ export function GanttChart({
                     ]
                       .filter(Boolean)
                       .join(' ')}
-                    style={{ left: g.x, width: g.width, top: y, ...(epicColor.get(r.task.id) && !crit(s.isCritical) && r.task.progress < 100 ? { ['--bar' as string]: epicColor.get(r.task.id) } : {}) }}
+                    style={{ left: g.x, width: g.width, top: y, ...(epicColor.get(r.task.id) ? { ['--bar' as string]: epicColor.get(r.task.id) } : {}) }}
                     onClick={() => !drag?.active && onSelect(r.task.id)}
                     onPointerDown={(e) => beginDrag(e, r.task.id, 'move')}
                   >
@@ -472,7 +570,28 @@ export function GanttChart({
                     />
                   )}
                   {g.floatWidth ? <span className={styles.floatBar} style={{ left: g.floatX, width: g.floatWidth, top: y }} /> : null}
+                  <Assignees taskId={r.task.id} list={assigneesByTask.get(r.task.id)} overloaded={overloadedResourceIds} left={Math.max(g.floatWidth ? g.floatX + g.floatWidth : g.endX, feedingEndByTask.has(r.task.id) ? xOfDayEnd(axis, feedingEndByTask.get(r.task.id)!) : 0) + AVATAR_GAP} top={y + (BAR_HEIGHT - 22) / 2} />
                 </span>
+              )
+            })}
+
+            {(previewSchedule ?? project.schedule).feedingBuffers.map((fb) => {
+              const idx = rowIndex.get(fb.fromTaskId)
+              if (idx === undefined || !fb.start || !fb.end) return null
+              const x1 = xOfDate(axis, fb.start)
+              const x2 = xOfDayEnd(axis, fb.end)
+              const from = project.tasks.find((t) => t.id === fb.fromTaskId)?.name ?? fb.fromTaskId
+              const to = project.tasks.find((t) => t.id === fb.toTaskId)?.name ?? fb.toTaskId
+              const title = `Feeding buffer ${fb.days} วัน: สายงานรอง "${from}" (${fb.chainDays} วัน) มาบรรจบ "${to}" · มี float ${fb.availableDays} วัน${fb.ok ? ' · พอ' : ' · ไม่พอ ควรเริ่มสายนี้ให้เร็วขึ้น'}`
+              return (
+                <span
+                  key={`fb-${fb.fromTaskId}`}
+                  className={[styles.feeding, !fb.ok && styles.feedingShort].filter(Boolean).join(' ')}
+                  style={{ left: x1, width: Math.max(x2 - x1, 6), top: barTop(idx) + (BAR_HEIGHT - 12) / 2 }}
+                  data-testid={`feeding-${fb.fromTaskId}`}
+                  data-ok={fb.ok ? 'true' : 'false'}
+                  title={title}
+                />
               )
             })}
 
@@ -482,11 +601,27 @@ export function GanttChart({
               </div>
             )}
 
-            {hasBuffer && <BufferRow project={project} axis={axis} rowIdx={rows.length} schedule={previewSchedule ?? project.schedule} />}
+            {hasBuffer && !hasReleases && <BufferRow project={project} axis={axis} rowIdx={rows.length} schedule={previewSchedule ?? project.schedule} />}
+            {hasReleases && (previewSchedule ?? project.schedule).releases.map((r, i, all) => <ReleaseBuffer key={r.id} release={r} next={all[i + 1]} axis={axis} rowIdx={rows.length} />)}
           </div>
         </div>
       </div>
     </div>
+  )
+}
+
+function Assignees({ taskId, list, overloaded, left, top }: { taskId: string; list?: { resource: Resource; units: number }[]; overloaded?: ReadonlySet<string>; left: number; top: number }) {
+  if (!list || list.length === 0) return null
+  const shown = list.slice(0, MAX_AVATARS)
+  const more = list.length - shown.length
+  const label = list.map((a) => `${a.resource.name} ${a.units}%${overloaded?.has(a.resource.id) ? ' (เกินกำลัง)' : ''}`).join(', ')
+  return (
+    <span className={styles.assignees} style={{ left, top }} role="img" aria-label={`ผู้ทำ: ${label}`} title={`ผู้ทำ: ${label}`} data-testid={`assignees-${taskId}`}>
+      {shown.map((a) => (
+        <Avatar key={a.resource.id} name={a.resource.name} color={a.resource.color} className={[styles.assigneeAv, overloaded?.has(a.resource.id) && styles.assigneeOver].filter(Boolean).join(' ')} />
+      ))}
+      {more > 0 && <span className={[styles.assigneeAv, styles.assigneeMore].join(' ')}>+{more}</span>}
+    </span>
   )
 }
 
@@ -495,10 +630,13 @@ function Dot({ row, highlight, epicColor }: { row: ReturnType<typeof buildOutlin
   const isSummary = row.hasChildren || Boolean(row.task.epic)
   const kind = isSummary ? 'summary' : s.isMilestone ? 'milestone' : highlight && s.isCritical ? 'critical' : highlight && s.isNearCritical ? 'near' : 'task'
   const base = kind === 'summary' ? 'var(--ink)' : kind === 'milestone' ? 'var(--milestone)' : kind === 'critical' ? 'var(--critical)' : kind === 'near' ? 'var(--critical-bg)' : 'var(--task)'
-  const color = epicColor && (kind === 'summary' || kind === 'task') ? epicColor : base
+  // inside an Epic every task keeps the Epic colour; critical / near-critical become a ring instead
+  const color = epicColor && kind !== 'milestone' ? epicColor : base
+  const ring = epicColor && kind === 'critical' ? '0 0 0 2px var(--surface), 0 0 0 4px var(--critical)' : kind === 'near' ? `inset 0 0 0 2px var(--critical${epicColor ? '-bg' : ''})` : undefined
   return (
     <span
       aria-hidden="true"
+      data-critical={kind === 'critical' ? 'true' : undefined}
       style={{
         width: 10,
         height: 10,
@@ -506,9 +644,37 @@ function Dot({ row, highlight, epicColor }: { row: ReturnType<typeof buildOutlin
         borderRadius: kind === 'summary' || kind === 'milestone' ? 2 : 999,
         transform: kind === 'milestone' ? 'rotate(45deg)' : undefined,
         background: color,
-        boxShadow: kind === 'near' ? 'inset 0 0 0 2px var(--critical)' : undefined,
+        boxShadow: ring,
       }}
     />
+  )
+}
+
+/** One release's buffer on the buffer row: bar after its milestone, diamond at the promised date (BUF-8). */
+function ReleaseBuffer({ release: r, next, axis, rowIdx }: { release: ReleaseResult; next?: ReleaseResult; axis: ReturnType<typeof computeAxis>; rowIdx: number }) {
+  if (!r.plannedEnd || !r.end) return null
+  const x1 = xOfDayEnd(axis, r.plannedEnd)
+  const x2 = xOfDayEnd(axis, r.end)
+  const committed = r.committedEnd ?? r.end
+  const xc = xOfDayEnd(axis, committed)
+  const top = rowIdx * ROW_HEIGHT + (ROW_HEIGHT - BAR_HEIGHT) / 2
+  const usage = r.aheadDays > 0 ? ` · ล่วงหน้า ${r.aheadDays} วัน` : r.consumedPercent !== null ? ` · ใช้ไป ${r.consumedPercent}%` : ''
+  const label = `${r.name} · เผื่อ ${r.days} วัน${usage}`
+  const title = `${r.name}: เผื่อ ${r.days} วัน (สายงาน ${r.chainDays} วัน, ${r.taskIds.length} งาน)${usage} · สัญญาส่ง ${formatThai(committed, { year: true })}`
+  // a label after the diamond only when the next release's bar leaves room for it
+  const roomAfter = next?.plannedEnd ? xOfDayEnd(axis, next.plannedEnd) - Math.max(x2, xc) - 14 : Infinity
+  return (
+    <>
+      {r.days > 0 && (
+        <div className={[styles.buffer, r.status === 'red' && styles.bufferRed, r.status === 'yellow' && styles.bufferYellow].filter(Boolean).join(' ')} style={{ left: x1, width: Math.max(x2 - x1 - 14, 8), top }} data-testid={`release-buffer-${r.id}`} title={title}>
+          <span className={styles.bufferUsed} style={{ width: `${Math.min(100, r.consumedPercent ?? 0)}%` }} />
+          {x2 - x1 > 110 && <span className={styles.bufferLabel}>{label}</span>}
+        </div>
+      )}
+      {xc > x2 + 12 && <span className={styles.slack} style={{ left: x2, width: xc - x2 - 8, top }} title={`ล่วงหน้า ${r.aheadDays} วัน ก่อนวันสัญญาส่ง`} />}
+      <span className={styles.deliver} style={{ left: xc - 8, top: rowIdx * ROW_HEIGHT + 14 }} data-testid={`release-deliver-${r.id}`} title={`${r.name} สัญญาส่ง ${formatThai(committed, { year: true })}${committed !== r.end ? ' (ล็อกตอนบันทึก baseline)' : ''}`} />
+      {x2 - x1 <= 110 && roomAfter > 120 && <span className={styles.deliverLabel} style={{ left: Math.max(x2, xc) + 14, top: rowIdx * ROW_HEIGHT + 13 }}>{r.name} · เผื่อ {r.days} วัน</span>}
+    </>
   )
 }
 

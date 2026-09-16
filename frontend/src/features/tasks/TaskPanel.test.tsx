@@ -33,6 +33,25 @@ describe('TaskPanel', () => {
     expect(body).toEqual({ duration: 7 })
   })
 
+  it('autosaves the description (trimmed)', async () => {
+    const patch = vi.fn(() => sampleProject())
+    vi.stubGlobal('fetch', vi.fn(mockFetch({ 'PATCH /projects/prj_sample/tasks/t2': patch })))
+    renderWithProviders(<TaskPanel project={sampleProject()} taskId="t2" onClose={() => {}} onSelect={() => {}} />)
+    const note = screen.getByLabelText('หมายเหตุ')
+    expect(note).toHaveValue('')
+    await userEvent.type(note, 'คุยกับทีมคลังก่อน ')
+    await waitFor(() => expect(patch).toHaveBeenCalled(), { timeout: 2000 })
+    const body = JSON.parse((patch.mock.calls[0] as unknown as [RequestInit])[0].body as string)
+    expect(body).toEqual({ description: 'คุยกับทีมคลังก่อน' })
+  })
+
+  it('shows an existing note for the selected task', () => {
+    const p = sampleProject()
+    p.tasks.find((t) => t.id === 't3')!.description = 'รอเอกสารจากบัญชี'
+    renderWithProviders(<TaskPanel project={p} taskId="t3" onClose={() => {}} onSelect={() => {}} />)
+    expect(screen.getByLabelText('หมายเหตุ')).toHaveValue('รอเอกสารจากบัญชี')
+  })
+
   it('adds a predecessor and surfaces cycle errors from the API', async () => {
     const post = vi
       .fn()

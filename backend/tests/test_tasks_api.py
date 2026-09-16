@@ -135,3 +135,43 @@ def test_dependency_kept_when_task_becomes_summary(client: TestClient):
     s = body["schedule"]["tasks"]
     assert s[a]["isSummary"] and s[a]["end"] == "2026-09-16"
     assert s[b]["start"] == "2026-09-17"
+
+
+def test_task_description_create_update_clear_and_export(client: TestClient):
+    pid = create_project(client)["id"]
+    res = client.post(
+        f"/api/projects/{pid}/tasks",
+        json={"name": "A", "duration": 2, "description": "  ทำร่วมกับทีมคลัง  "},
+    )
+    assert res.status_code == 201, res.text
+    task = res.json()["tasks"][0]
+    assert task["description"] == "ทำร่วมกับทีมคลัง"
+    tid = task["id"]
+
+    # default is empty; other patches leave it alone
+    b, _ = add_task(client, pid, "B", 1)
+    assert client.get(f"/api/projects/{pid}").json()["tasks"][1]["description"] == ""
+    res = client.patch(f"/api/projects/{pid}/tasks/{tid}", json={"duration": 3})
+    assert res.json()["tasks"][0]["description"] == "ทำร่วมกับทีมคลัง"
+
+    res = client.patch(f"/api/projects/{pid}/tasks/{tid}", json={"description": "รอเอกสาร\nจากบัญชี"})
+    assert res.status_code == 200
+    assert res.json()["tasks"][0]["description"] == "รอเอกสาร\nจากบัญชี"
+    # persisted on disk and read back
+    saved = client.get(f"/api/projects/{pid}").json()["tasks"][0]["description"]
+    assert saved == "รอเอกสาร\nจากบัญชี"
+
+    # too long is rejected
+    res = client.patch(f"/api/projects/{pid}/tasks/{tid}", json={"description": "x" * 2001})
+    assert res.status_code == 422
+
+    # empty string clears
+    res = client.patch(f"/api/projects/{pid}/tasks/{tid}", json={"description": ""})
+    assert res.json()["tasks"][0]["description"] == ""
+
+    # CSV export carries the note in the last column
+    client.patch(f"/api/projects/{pid}/tasks/{b}", json={"description": "หมายเหตุ B"})
+    csv_text = client.get(f"/api/projects/{pid}/export.csv").text
+    header = csv_text.splitlines()[0]
+    assert header.endswith("งานก่อนหน้า,หมายเหตุ")
+    assert any(line.endswith(",หมายเหตุ B") for line in csv_text.splitlines())

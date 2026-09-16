@@ -125,6 +125,23 @@ RULES: list[dict[str, Any]] = [
         "options": {"min": 50, "max": 400, "step": 10, "default": 100, "unit": "%"},
     },
     {
+        "id": "releaseSuccessors",
+        "title": "งานที่ต่อจากจุดส่งมอบ เริ่มเมื่อไร",
+        "reference": "Critical Chain: buffer ไม่ใช่เวลาว่าง",
+        "options": [
+            {
+                "value": "immediate",
+                "label": "เริ่มทันทีที่ milestone ถึง",
+                "help": "ตามหลัก Critical Chain เวลาเผื่อเป็นประกัน ไม่ใช่เวลาที่จองไว้",
+            },
+            {
+                "value": "after_buffer",
+                "label": "รอให้พ้นเวลาเผื่อก่อน",
+                "help": "สำหรับงานที่ผูกกับวันสัญญาส่งจริง เช่น ลูกค้าตรวจรับ ขึ้นระบบ",
+            },
+        ],
+    },
+    {
         "id": "schedulingMode",
         "title": "เมื่อลากงานไปวางวันอื่น",
         "reference": "Auto vs manual scheduling",

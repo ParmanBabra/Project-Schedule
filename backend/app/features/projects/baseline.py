@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, status
 
 from app.core.errors import ValidationFailed
-from app.core.models import Baseline, BaselineTask, utcnow
+from app.core.models import Baseline, BaselineRelease, BaselineTask, utcnow
 from app.features.scheduling.engine import compute_schedule
 
 from .repository import ProjectRepository, get_repo
@@ -31,6 +31,11 @@ def save_baseline(project_id: str, repo: ProjectRepository = Depends(get_repo)) 
             tid: BaselineTask(start=s.start, end=s.end)
             for tid, s in schedule.tasks.items()
             if not s.is_summary
+        },
+        releases={
+            r.id: BaselineRelease(planned_end=r.planned_end, buffer_days=r.days)
+            for r in schedule.releases
+            if r.planned_end is not None
         },
     )
     return validate_and_save(repo, project)

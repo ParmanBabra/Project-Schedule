@@ -47,7 +47,8 @@ data/
       "color": null,
       "parentId": null,
       "collapsed": false,
-      "order": 2
+      "order": 2,
+      "description": ""
     }
   ],
   "buffer": {
@@ -66,13 +67,17 @@ data/
     "overallocationThreshold": 100,
     "lagUnit": "working",
     "defaultDependency": { "type": "FS", "lag": 0 },
-    "schedulingMode": "auto"
+    "schedulingMode": "auto",
+    "releaseSuccessors": "immediate"
   },
   "dependencies": [
     { "id": "d_01", "from": "t_00", "to": "t_01", "type": "FS", "lag": 0 }
   ],
   "assignments": [
     { "id": "a_01", "taskId": "t_01", "resourceId": "r_01", "units": 100 }
+  ],
+  "releases": [
+    { "id": "rel_01", "name": "เฟส 1", "milestoneTaskId": "t_05", "days": null }
   ],
   "createdAt": "2026-09-14T09:00:00Z",
   "updatedAt": "2026-09-14T09:00:00Z"
@@ -137,7 +142,7 @@ POST   /api/projects/{id}/duplicate
 | ID | Feature | รายละเอียด |
 |---|---|---|
 | TSK-1 | เพิ่มงาน | ชื่อ duration (วันทำงาน) เริ่มต้นวางต่อจากงานสุดท้ายหรือวันเริ่มโปรเจกต์ |
-| TSK-2 | แก้ไขงาน | ชื่อ duration progress สี หมายเหตุ |
+| TSK-2 | แก้ไขงาน | ชื่อ duration progress สี หมายเหตุ (`description` ข้อความอิสระ ≤ 2000 ตัว ตัดช่องว่างหัวท้าย ส่ง "" เพื่อล้าง ออกใน CSV คอลัมน์ "หมายเหตุ") |
 | TSK-3 | ลบงาน | ลบ dependency และ assignment ที่เกี่ยวข้องด้วย |
 | TSK-4 | จัดลำดับแถว | ลากเรียงในตาราง เปลี่ยนค่า `order` |
 | TSK-5 | Milestone | duration = 0 แสดงเป็นเพชร |
@@ -391,13 +396,19 @@ PATCH  /api/projects/{id}/tasks/{taskId}/move  # body: { parentId, order }
 | BUF-3 | แสดงใน Gantt | แถบ buffer ต่อท้าย milestone สุดท้ายของ critical path ลายทแยงสี `--critical-bg` ขอบ `--critical` มีป้าย "สำรอง 3 วัน" ส่วน management reserve เป็นเส้นประจางต่อจากนั้น ปิดได้ |
 | BUF-4 | สองวันจบ | toolbar และรายการโปรเจกต์แสดง "เสร็จตามแผน 6 ต.ค. · สัญญาส่ง 9 ต.ค." |
 | BUF-5 | ติดตามการใช้ buffer | เมื่อ critical path ล่าช้า (วันจบคำนวณเลื่อนออกจาก baseline ของวันจบ) ระบบคำนวณ % buffer ที่ถูกใช้ไป เทียบกับ % ความคืบหน้าของ critical path แสดงเป็นสัญญาณ เขียว (ใช้ < คืบหน้า) เหลือง (ใกล้เคียง) แดง (ใช้ > คืบหน้า + 20% หรือหมด) ตามแนวคิด fever chart ของ CCPM |
-| BUF-6 | Feeding buffer (เฉพาะ ccpm) | คำนวณที่จุดที่สายงานไม่ critical มาบรรจบ critical chain แสดงเป็นแถบเล็กสีเทาก่อนงานที่บรรจบ ทำใน phase หลัง |
+| BUF-6 | Feeding buffer (เฉพาะ ccpm) | ที่ทุกจุดที่สายงานไม่ critical มาบรรจบงาน critical: สายงานรอง = เส้นทางที่ยาวที่สุดของงานไม่ critical ที่จบที่งานต้นทาง feeding buffer = ccpmRatio% ของสายนั้น (ปัดขึ้น, ขั้นต่ำ 1 วันเมื่อสายยาวกว่า 5 วัน) ระบบ **ไม่ย้ายงาน** แต่คืน `schedule.feedingBuffers[]` {fromTaskId,toTaskId,dependencyId,chainDays,days,availableDays = total float ของงานต้นทาง,ok = float ≥ days,start,end} Gantt วาดแถบเล็กจุดไข่ปลาสีเทาต่อท้ายงานต้นทาง ยาว = days ถ้า float ไม่พอเป็นสีชมพู tooltip แนะนำให้เริ่มสายนั้นเร็วขึ้น มี legend "Feeding buffer" เฉพาะเมื่อใช้ ccpm |
 | BUF-7 | เตือนเผื่อซ้ำซ้อน | ถ้าเลือก ccpm และ progress จริงเร็วกว่าแผนต่อเนื่อง > 30% ของงานที่เสร็จ แสดงคำแนะนำว่าค่าประเมินอาจมีเผื่อในตัว ควรใช้ percent แทน |
+| BUF-9 | งานที่ต่อจากจุดส่งมอบ | กติกา `rules.releaseSuccessors`: `immediate` (ค่าเริ่มต้น ตามหลัก Critical Chain เวลาเผื่อไม่ใช่เวลาที่จอง) หรือ `after_buffer` (งานที่มี dependency **จาก milestone ที่เป็นจุดส่งมอบ** เริ่มหลังเวลาเผื่อของ release นั้น ใช้กับงานที่ผูกกับวันสัญญาส่งจริง) engine ทำ forward pass รอบแรก ขนาดเผื่อของแต่ละ release คำนวณจากสายงานของตัวเอง (ไม่ขึ้นกับ gate) แล้วรอบสองเลื่อน successor ของ milestone ออกไป `days` วันทำงาน backward pass และ free float หัก gate เท่ากัน งานที่ต่อจากงานปกติของ release ไม่ถูกเลื่อน |
+| SET-11 | ต้องเสร็จภายในวันที่ (FNLT) | `constraint.type = "FNLT"`: backward pass จำกัด late finish ของงานไว้ที่วันทำงานล่าสุดที่ ≤ วันที่กำหนด (เสาร์อาทิตย์ = ศุกร์ก่อนหน้า) float ติดลบได้และถือเป็น critical งานก่อนหน้าทั้งสายได้ float จากกำหนดนี้ แผงงานมีสวิตช์ "ต้องเสร็จภายในวันที่กำหนด" (เลือกได้อย่างเดียวกับ "เริ่มไม่ก่อน") และชิป "เลยกำหนดเสร็จ N วัน" เมื่อ float < 0 ใช้แทน buffer ตามปีงบประมาณ |
+| BUF-8 | จุดส่งมอบหลายจุด (release) | ตั้ง milestone ใดก็ได้เป็น "จุดส่งมอบ" ที่มีเวลาเผื่อของตัวเอง (`releases[]`: id ชื่อ milestoneTaskId days override) แบ่งตามสิ่งที่ต้องส่ง ไม่ใช่ปีปฏิทิน · งานเดี่ยวทุกงานสังกัด release แรกสุด (ตามวันที่ milestone) ที่งานนั้นป้อนถึงผ่าน dependency งานที่ไม่ป้อนถึง milestone ใดเลยสังกัด release สุดท้าย ทุกงานจึงมีเผื่อคุ้มครองก้อนเดียวไม่ซ้ำ · **critical chain ต่อ release**: งานที่ป้อนถึง milestone ของ release มี deadline = วันที่ milestone นั้นใน backward pass (ไม่ใช่ปลายโปรเจกต์) จึงได้ float/critical ของตัวเอง งานที่ไม่ป้อนถึง milestone ใด (orphan) ใช้ปลายโปรเจกต์ · สายงานของ release = เส้นทางที่ยาวที่สุด (ผลรวมระยะงาน ไม่นับ lag และช่องว่างรอ) ผ่านงานของตัวเองเท่านั้น คืนใน `chainTaskIds` และ `chainDays` ถ้า orphan จบหลัง milestone ก้อนสุดท้าย release สุดท้ายยืดไปคุมถึงงานนั้น · ขนาดเผื่อใช้วิธี/สัดส่วนเดียวกับโปรเจกต์ (pert ใช้งานบนสายนั้น) หรือกำหนดวันเองต่อ release · `chainProgress` = ความคืบหน้าของงาน critical ใน release (ถ่วงน้ำหนักตาม progressRollup) ใช้เทียบกับการใช้เผื่อ ส่วน `progress` = ทุกงานในก้อน · baseline ล็อก plannedEnd + bufferDays ต่อ release (`baseline.releases`) ใช้คำนวณ consumed% และสถานะเขียว/เหลือง/แดงต่อ release ด้วยโซนเดียวกับ BUF-5 · engine คืน `schedule.releases[]` เรียงตามวันที่ milestone ส่วน `schedule.buffer` (ทั้งโปรเจกต์) ยังคำนวณอยู่แต่ UI ซ่อนเมื่อมี release · ลบ milestone แล้ว release หายตาม · งาน release 2 ที่รอ release 1 เริ่มตามวันเสร็จตามแผนของงานนั้น (ดู BUF-9 ถ้าต้องการให้รอเวลาเผื่อ) |
 
 API
 
 ```
 PATCH  /api/projects/{id}/buffer        # body: { method, riskLevel, percent, days, managementReservePercent }
+POST   /api/projects/{id}/releases      # { name, milestoneTaskId, days? } → ProjectOut (BUF-8) milestone ต้องเป็นงานเดี่ยวและยังไม่ถูกใช้
+PATCH  /api/projects/{id}/releases/{rid}  # { name?, milestoneTaskId?, days?, clearDays? }
+DELETE /api/projects/{id}/releases/{rid}
 GET    /api/projects/{id}/schedule      # เพิ่มฟิลด์ buffer: { days, end, managementReserveDays, consumedPercent, status }
 ```
 
@@ -474,7 +485,7 @@ GET    /api/settings/defaults          # default ทั้งหมดพร้�
 
 - **Shell** ใช้ Layout 2: header bar สีม่วงมี brand, project switcher (popover รายชื่อโปรเจกต์ 8 รายการล่าสุด + ลิงก์ดูทั้งหมด) และแท็บ Gantt / ปฏิทิน / ทรัพยากร / ตั้งค่า บนมือถือแท็บยุบเป็นเมนู ⋯ (BottomNav มาใน Phase 6)
 - **การเลือกงาน** อยู่ใน URL `?task=<id>` เสมอ เพื่อให้ refresh / แชร์ลิงก์แล้วเปิดแผงเดิม
-- **Gantt** คอลัมน์ชื่อ 220px (มือถือ 120px ซ่อนเลข WBS) แกนเวลาเป็นวันปฏิทิน ความกว้างต่อวัน 36 / 12 / 4 px ตาม zoom วัน / สัปดาห์ / เดือน ค่า zoom จำไว้ใน localStorage มือถือเริ่มที่สัปดาห์ แถวสูง 44px ทุกอุปกรณ์
+- **Gantt** คอลัมน์ชื่อ 220px (มือถือ 120px ซ่อนเลข WBS) ลากขอบขวาปรับได้ 120 – 560px จำใน localStorage `phaengan.gantt.namecol` ดับเบิลคลิกคืนค่าเริ่มต้น (helper ใน `gantt/lib/nameCol.ts`) แกนเวลาเป็นวันปฏิทิน ความกว้างต่อวัน 36 / 12 / 4 px ตาม zoom วัน / สัปดาห์ / เดือน ค่า zoom จำไว้ใน localStorage มือถือเริ่มที่สัปดาห์ แถวสูง 44px ทุกอุปกรณ์
 - **Milestone** วาดเพชรที่ขอบท้ายของวันที่ engine คืน ลูกศร FS เข้าที่มุมซ้ายของเพชร
 - **แถวสำรองเวลา** แสดงเมื่อ buffer > 0: แถบลายทแยงจาก plannedEnd ถึง buffer.end เพชรดำที่ปลาย เส้นประ management reserve ต่อท้าย พร้อมป้าย "สัญญาส่ง"
 - **เพิ่มงาน** ผ่าน dialog (ชื่อ ระยะเวลา กลุ่ม milestone) แล้วเลือกงานใหม่อัตโนมัติ placeholder ระยะเวลาเปลี่ยนตามวิธี buffer ("ถ้าราบรื่น กี่วัน" เมื่อ ccpm)
@@ -499,6 +510,7 @@ GET    /api/settings/defaults          # default ทั้งหมดพร้�
 
 - **ไฟล์ resources.json** มี backup 20 ชุดที่ `data/backups/resources/` สีทรัพยากรวนจาก palette 7 สีเมื่อไม่ระบุ
 - **`GET /api/resources`** คืน `assignmentCount` และ `projectCount` รวมทุกโปรเจกต์ · **`DELETE /api/resources/{id}`** ตอบ 409 พร้อมรายชื่อโปรเจกต์ที่ใช้อยู่ ต้องส่ง `?force=true` เพื่อถอดออกจากทุกงานแล้วลบ
+- **ผู้ทำบน Gantt** `GanttChart` รับ `resources` และ `overloadedResourceIds` จากหน้า วาด Avatar ของทุก assignment หลังปลายแถบงาน (สูงสุด 3 + "+N", วงแหวนแดงเมื่ออยู่ในรายการเกินกำลังของ workload) ข้าม milestone / กลุ่มงาน / resource ที่หาไม่พบ
 - **Assignments** `POST /projects/{id}/assignments` (taskId, resourceId, units) ห้ามซ้ำคู่ task+resource · `PATCH .../{asgId}` แก้ units · `DELETE .../{asgId}` ทุกตัวตอบ `ProjectOut` และเข้าประวัติ undo
 - **Workload** `GET /api/resources/workload?from&to&projectId&resourceId=…` คำนวณสดจาก schedule ของทุกโปรเจกต์ (เฉพาะ leaf task ไม่รวม milestone) ต่อวันทำงานของโปรเจกต์นั้น `over` เมื่อ load > capacity × threshold/100 หรือเป็นวันลาของทรัพยากร (capacity 0) `threshold` มาจาก `rules.overallocationThreshold` ของ projectId ที่ส่ง ไม่ส่งใช้ 100 ช่วงสูงสุด 400 วัน
 - **UI** ชิป "เกินกำลัง N คน" บน Gantt และคำเตือนในแผงงานกรองเฉพาะทรัพยากรที่เกี่ยวข้อง (ส่ง resourceId) เพื่อไม่ให้โปรเจกต์อื่นมารบกวน · หน้าทรัพยากรรวมวันเกินกำลังที่ติดกัน (ข้ามสุดสัปดาห์ได้) ของงานชุดเดียวกันเป็นแถวเดียว · ช่วงความร้อนเริ่มที่สัปดาห์ปัจจุบัน 14 วัน เปลี่ยนวันเริ่มได้ · เปิดจาก `/resources?project=<id>` เพื่อใช้เกณฑ์ของโปรเจกต์นั้น
@@ -550,6 +562,6 @@ GET    /api/settings/defaults          # default ทั้งหมดพร้�
 - **โมเดล** `task.epic: {color, description, ownerResourceId} | null` งานที่มี `epic` ถือเป็น summary เสมอ (แม้ยังไม่มีลูก: engine ให้ es=ef=0, ระยะ 0, ไม่ใช่ milestone) Epic ว่างจึงเป็นแถวกลุ่มที่รอรับงาน
 - **API** `POST /projects/{id}/epics` `{name,color?,description,ownerResourceId,tasks[{name,duration,checklist[]}],existingTaskIds[],sequential,position:end|after,afterTaskId,parentId}` ไม่ส่ง color จะหยิบสีถัดไปจาก 6 สีมาตรฐานที่ยังไม่ถูกใช้ · `POST /epics/bulk {epics[], linkEpics}` สำหรับวางจาก Excel ชื่อซ้ำ (casefold) เติมงานเข้า Epic เดิม `linkEpics` ผูก FS ระหว่างกลุ่มตามลำดับ · `PATCH /epics/{id}` แก้ชื่อ/สี/คำอธิบาย/เจ้าของ (`clearOwner`) · `POST /epics/{id}/convert` เปลี่ยนงาน/กลุ่มเป็น Epic · `POST /epics/{id}/members {taskIds}` ย้ายงานเข้า (ปฏิเสธการย้ายตัวเอง/กลุ่มแม่) · `PATCH /tasks/{id} {clearEpic:true}` ถอดความเป็น Epic · ลบใช้ `DELETE /tasks/{id}?mode=lift|cascade` เดิม
 - **การแยกวิเคราะห์ที่วาง** อยู่ฝั่งหน้าบ้าน (`features/epics/lib/epics.ts: parsePaste`): บรรทัดที่มี Tab = แถว Excel คอลัมน์ข้อความสุดท้าย = งาน ก่อนหน้า = Epic คอลัมน์แรกที่เป็นตัวเลขถูกข้าม ช่อง Epic ว่าง = Epic ก่อนหน้า บรรทัดขึ้นต้น "-" = งานย่อยของงานบรรทัดบน; ข้อความธรรมดา: บรรทัดไม่เยื้อง = Epic เยื้อง = งาน `(3)` หรือ `| 3` ท้ายชื่อ = ระยะเวลา
-- **สีบน Gantt** `epicColors()` หา Epic ใกล้สุดของทุกงาน แถบงานใช้ `--bar` = สี Epic เว้นเมื่อไฮไลต์ critical (ชมพู) หรือเสร็จแล้ว แถบ Epic เองใช้สี Epic เสมอ จุดหน้าชื่อและป้าย "Epic" ในคอลัมน์ชื่อ กรอง `?epic=<id>` ให้ `buildOutline(project, rootId)` แสดงเฉพาะต้นไม้นั้น
+- **สีบน Gantt** `epicColors()` หา Epic ใกล้สุดของทุกงาน แถบงานใช้ `--bar` = สี Epic เสมอ (เสร็จแล้วสีเดิมแต่จางลง) งานที่อยู่บน critical path ใน Epic ไม่เปลี่ยนเป็นชมพู แต่มีขอบด้านใน `--critical` 2px (near-critical ขอบ `--critical-bg`) จุดหน้าชื่อก็สี Epic พร้อมวงแหวนชมพู งานนอก Epic ยังใช้ชมพูเต็มแถบเหมือนเดิม แถบ Epic เองใช้สี Epic เสมอ จุดหน้าชื่อและป้าย "Epic" ในคอลัมน์ชื่อ กรอง `?epic=<id>` ให้ `buildOutline(project, rootId)` แสดงเฉพาะต้นไม้นั้น
 - **สถานะ Epic** (หน้าบ้าน `epicStats`): late ถ้ามีงานลูกล่าช้า → done ถ้ามีงานและ % = 100 → doing ถ้า % > 0 → todo
 

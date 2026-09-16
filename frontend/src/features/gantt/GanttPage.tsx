@@ -7,7 +7,7 @@ import { useIsMobile } from '@/shared/lib/useIsMobile'
 import { useCanUndoRedo, useHistory } from '@/features/history/store'
 import { projectKeys, useAddDependency, useProject, useReplaceState, useSaveBaseline, useUpdateTask } from '@/features/projects/api'
 import type { ProjectOut, Task } from '@/features/projects/types'
-import { useWorkload } from '@/features/resources/api'
+import { useResources, useWorkload } from '@/features/resources/api'
 import { useSchedulePreview } from '@/features/settings/api'
 import { TaskPanel } from '@/features/tasks/TaskPanel'
 import { ApiError } from '@/shared/api/client'
@@ -93,7 +93,9 @@ export function GanttPage() {
   const wlTo = project.data?.schedule.summary.plannedEnd ?? wlFrom
   const projectResourceIds = useMemo(() => Array.from(new Set((project.data?.assignments ?? []).map((a) => a.resourceId))), [project.data?.assignments])
   const workload = useWorkload(wlFrom, wlTo, projectId, projectResourceIds.length > 0, projectResourceIds)
-  const overCount = new Set((workload.data?.overallocations ?? []).map((o) => o.resourceId)).size
+  const resources = useResources()
+  const overloadedIds = useMemo(() => new Set((workload.data?.overallocations ?? []).map((o) => o.resourceId)), [workload.data])
+  const overCount = overloadedIds.size
 
   const setZoom = (z: Zoom) => {
     setZoomState(z)
@@ -309,7 +311,7 @@ export function GanttPage() {
                   ล่าช้า {s.lateCount} งาน
                 </Chip>
               )}
-              {b.days > 0 && (
+              {b.days > 0 && p.schedule.releases.length === 0 && (
                 <Chip
                   tone={b.status === 'red' ? 'critical' : b.status === 'yellow' ? 'warn' : 'green'}
                   data-testid="chip-buffer"
@@ -339,9 +341,22 @@ export function GanttPage() {
                   Baseline
                 </Button>
               )}
-              <Chip tone="soft" data-testid="chip-dates">
-                เสร็จตามแผน {formatThai(s.plannedEnd)} · สัญญาส่ง {formatThai(s.committedEnd)}
-              </Chip>
+              {p.schedule.releases.length === 0 ? (
+                <Chip tone="soft" data-testid="chip-dates">
+                  เสร็จตามแผน {formatThai(s.plannedEnd)} · สัญญาส่ง {formatThai(s.committedEnd)}
+                </Chip>
+              ) : (
+                p.schedule.releases.map((r) => (
+                  <Chip
+                    key={r.id}
+                    tone={r.status === 'red' ? 'critical' : r.status === 'yellow' ? 'warn' : 'soft'}
+                    data-testid={`chip-release-${r.id}`}
+                    title={`${r.name}: ${r.taskIds.length} งาน สายงาน ${r.chainDays} วัน เผื่อ ${r.days} วัน · เสร็จตามแผน ${formatThai(r.plannedEnd, { year: true })} · สัญญาส่ง ${formatThai(r.committedEnd, { year: true })}${r.consumedPercent !== null ? ` · ใช้เผื่อไป ${r.consumedPercent}% ขณะที่สายงานหลักคืบหน้า ${r.chainProgress}%` : ''}`}
+                  >
+                    {r.name} · ส่ง {formatThai(r.committedEnd)} · เผื่อ {r.days} วัน{r.aheadDays > 0 ? ` · ล่วงหน้า ${r.aheadDays} วัน` : r.consumedPercent !== null ? ` · ใช้ไป ${r.consumedPercent}%` : ''}
+                  </Chip>
+                ))
+              )}
               {b.paddingWarning && (
                 <Chip tone="warn" data-testid="chip-padding" title={b.paddingNote ?? undefined}>
                   เผื่ออาจซ้ำซ้อน
@@ -403,6 +418,8 @@ export function GanttPage() {
               onLink={link}
               onArrowClick={(depId, x, y) => setPopover({ depId, x, y })}
               previewSchedule={dragPatch ? preview.data : null}
+              resources={resources.data ?? []}
+              overloadedResourceIds={overloadedIds}
             />
             <div className={styles.legend} aria-label="คำอธิบายสัญลักษณ์">
               <span className={styles.legendItem}><span className={styles.sw} style={{ background: 'var(--critical)' }} />Critical path</span>
@@ -410,8 +427,10 @@ export function GanttPage() {
               <span className={styles.legendItem}><span className={styles.sw} style={{ border: '2px dashed var(--link)', background: 'transparent' }} />เลื่อนได้ (float)</span>
               <span className={styles.legendItem}><span style={{ width: 10, height: 10, background: 'var(--milestone)', transform: 'rotate(45deg)', borderRadius: 2 }} />Milestone</span>
               <span className={styles.legendItem}><span className={styles.sw} style={{ background: 'var(--ink)' }} />กลุ่มงาน</span>
+              <span className={styles.legendItem}><span className={styles.sw} style={{ background: 'var(--task)', boxShadow: 'inset 0 0 0 2px var(--critical)' }} />Critical ใน Epic (สี Epic ขอบชมพู)</span>
               <span className={styles.legendItem}><span className={styles.sw} style={{ border: '2px solid var(--critical)', background: 'repeating-linear-gradient(135deg, var(--critical-bg) 0 4px, var(--surface) 4px 8px)' }} />เวลาเผื่อ</span>
               <span className={styles.legendItem}><span className={styles.sw} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }} />วันหยุด</span>
+              {p.buffer.method === 'ccpm' && <span className={styles.legendItem} title="ช่องว่างที่สายงานรองควรเว้นก่อนบรรจบสายงานหลัก แดง = float ไม่พอ"><span className={styles.sw} style={{ border: '2px dotted var(--text-4)', background: 'transparent' }} />Feeding buffer</span>}
               <span className={styles.spacer} />
               <span className={styles.legendHint}>ลากแถบเพื่อเลื่อนงาน · ลากขอบขวาปรับระยะเวลา · ลากจุดกลมท้ายแถบไปอีกงานเพื่อสร้างความสัมพันธ์</span>
             </div>

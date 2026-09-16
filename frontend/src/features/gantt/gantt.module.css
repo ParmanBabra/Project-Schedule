@@ -14,11 +14,11 @@
 .chart { flex: 1; overflow: auto; position: relative; }
 .inner { position: relative; min-width: 100%; }
 
-.headerRow { display: flex; position: sticky; top: 0; z-index: 3; background: var(--surface); border-bottom: 1px solid var(--border); height: 56px; }
+.headerRow { display: flex; position: sticky; top: 0; z-index: 5; background: var(--surface); border-bottom: 1px solid var(--border); height: 56px; }
 .nameHead {
   position: sticky;
   left: 0;
-  z-index: 4;
+  z-index: 6;
   width: var(--w-namecol);
   flex-shrink: 0;
   background: var(--surface);
@@ -54,8 +54,36 @@
 .hBottom .hCellWide { justify-content: flex-start; padding: 0 var(--sp-2); border-right: 1px solid var(--border-soft); }
 .hMuted { color: var(--text-4); }
 
+/* drag handle on the right edge of the name column (lives in the sticky header cell) */
+.colResizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -5px;
+  width: 10px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 5;
+  outline: none;
+}
+.colResizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 2px;
+  border-radius: 1px;
+  background: transparent;
+  transition: background var(--t-fast) var(--ease);
+}
+.colResizer:hover::after, .colResizer:focus-visible::after, .colResizerActive::after { background: var(--primary); }
+.chartResizing { cursor: col-resize; user-select: none; }
+.chartResizing .nameRow { pointer-events: none; }
+
 .body { display: flex; position: relative; }
-.namesCol { position: sticky; left: 0; z-index: 2; width: var(--w-namecol); flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); }
+/* above every bar/avatar/ghost (z 2–4) so scrolled-off bars slide underneath */
+.namesCol { position: sticky; left: 0; z-index: 5; width: var(--w-namecol); flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); }
 .nameRow {
   height: var(--h-row);
   display: flex;
@@ -126,14 +154,39 @@
   transition: box-shadow var(--t-fast) var(--ease);
 }
 .bar:hover { filter: brightness(0.97); }
+.barEpic { color: var(--text-on-primary); } /* Epic palette is saturated: white label reads better than the teal task text */
 .barCritical { background: var(--critical); color: var(--text-on-primary); }
 .barNear { background: var(--critical-bg); color: var(--critical-text); box-shadow: inset 0 0 0 2px var(--critical); }
 .barDone { opacity: 0.85; }
 .barSel { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary); }
 .barNear.barSel { box-shadow: inset 0 0 0 2px var(--critical), 0 0 0 2px var(--surface), 0 0 0 4px var(--primary); }
+/* tasks inside an Epic keep the Epic colour: critical = pink ring, near-critical = pale ring */
+.barCriticalEpic { box-shadow: inset 0 0 0 2px var(--critical); }
+.barNearEpic { box-shadow: inset 0 0 0 2px var(--critical-bg); }
+.barCriticalEpic.barSel { box-shadow: inset 0 0 0 2px var(--critical), 0 0 0 2px var(--surface), 0 0 0 4px var(--primary); }
+.barNearEpic.barSel { box-shadow: inset 0 0 0 2px var(--critical-bg), 0 0 0 2px var(--surface), 0 0 0 4px var(--primary); }
 .progress { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0, 0, 0, 0.12); pointer-events: none; }
-.barLabel { position: relative; }
+.barLabel { position: relative; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .floatBar { position: absolute; height: var(--h-bar); border: 2px dashed var(--link); border-left: 0; border-radius: 0 var(--r-pill) var(--r-pill) 0; pointer-events: none; }
+
+/* assignee avatars stacked after a bar */
+.assignees { position: absolute; display: inline-flex; align-items: center; z-index: 3; pointer-events: auto; }
+.assignees > * + * { margin-left: -6px; }
+.assigneeAv { box-shadow: 0 0 0 2px var(--surface); flex-shrink: 0; }
+.assigneeOver { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--critical); }
+.assigneeMore { width: 22px; height: 22px; border-radius: var(--r-pill); background: var(--surface-3); color: var(--text-2); font-size: var(--fs-caption); font-weight: var(--fw-medium); display: inline-flex; align-items: center; justify-content: center; }
+
+/* BUF-6 feeding buffer: recommended slack before a non-critical chain joins the critical chain */
+.feeding {
+  position: absolute;
+  height: 12px;
+  border-radius: var(--r-pill);
+  border: 2px dotted var(--text-4);
+  background: repeating-linear-gradient(135deg, var(--surface-3) 0 4px, var(--surface) 4px 8px);
+  z-index: 1;
+  pointer-events: auto;
+}
+.feedingShort { border-color: var(--critical); background: repeating-linear-gradient(135deg, var(--critical-bg) 0 4px, var(--surface) 4px 8px); }
 
 .summaryBar { --summary: var(--ink); position: absolute; height: 10px; background: var(--summary); border-radius: 3px; cursor: pointer; z-index: 2; }
 .summaryBar::before, .summaryBar::after { content: ''; position: absolute; top: 8px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 9px solid var(--summary); }

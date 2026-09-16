@@ -143,4 +143,5 @@ def replace_state(repo: ProjectRepository, project_id: str, state: ProjectState)
     project.assignments = state.assignments
     project.buffer = state.buffer
     project.rules = state.rules
+    project.releases = state.releases
     return validate_and_save(repo, project)

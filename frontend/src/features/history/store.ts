@@ -74,5 +74,6 @@ export function toState(p: ProjectOut) {
     assignments: p.assignments,
     buffer: p.buffer,
     rules: p.rules,
+    releases: p.releases,
   }
 }

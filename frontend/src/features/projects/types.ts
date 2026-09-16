@@ -4,8 +4,9 @@ export type DependencyType = 'FS' | 'SS' | 'FF' | 'SF'
 export type BufferMethod = 'ccpm' | 'percent' | 'pert'
 export type RiskLevel = 'low' | 'medium' | 'high'
 
+/** SNET = เริ่มไม่ก่อนวันที่, FNLT = ต้องเสร็จภายในวันที่ (float ติดลบได้) */
 export interface Constraint {
-  type: 'SNET'
+  type: 'SNET' | 'FNLT'
   date: string
 }
 
@@ -50,6 +51,8 @@ export interface Task {
   checklist: ChecklistItem[]
   progressFromChecklist: boolean
   epic: EpicInfo | null
+  /** free-text notes (หมายเหตุ), empty when none */
+  description: string
 }
 
 export interface Dependency {
@@ -86,6 +89,8 @@ export interface Rules {
   defaultDependency: { type: DependencyType; lag: number }
   schedulingMode: 'auto' | 'manual'
   bufferZones: { yellow: number; red: number }
+  /** BUF-9: what hangs off a release milestone starts right away, or after that release's buffer */
+  releaseSuccessors: 'immediate' | 'after_buffer'
 }
 
 export type TaskHealth = 'done' | 'late' | 'on_track' | 'not_started'
@@ -96,6 +101,64 @@ export interface Baseline {
   chainDays: number
   bufferDays: number
   tasks: Record<string, { start: string; end: string }>
+  releases: Record<string, { plannedEnd: string; bufferDays: number }>
+}
+
+/** A delivery point with its own schedule buffer (BUF-8) */
+export interface Release {
+  id: string
+  name: string
+  milestoneTaskId: string
+  /** override of the computed buffer size, null = computed */
+  days: number | null
+}
+
+export interface ReleaseCreate {
+  name: string
+  milestoneTaskId: string
+  days?: number | null
+}
+
+export interface ReleaseUpdate {
+  name?: string
+  milestoneTaskId?: string
+  days?: number | null
+  clearDays?: boolean
+}
+
+export interface ReleaseResult {
+  id: string
+  name: string
+  milestoneTaskId: string
+  taskIds: string[]
+  chainDays: number
+  days: number
+  plannedEnd: string | null
+  end: string | null
+  committedEnd: string | null
+  progress: number
+  /** progress of the release's own critical chain (what the fever chart compares against) */
+  chainProgress: number
+  chainTaskIds: string[]
+  consumedPercent: number | null
+  consumedDays: number | null
+  status: 'green' | 'yellow' | 'red' | null
+  aheadDays: number
+  percentUsed: number | null
+  note: string | null
+}
+
+/** BUF-6: slack a non-critical chain should keep before it joins the critical chain (ccpm only) */
+export interface FeedingBuffer {
+  fromTaskId: string
+  toTaskId: string
+  dependencyId: string | null
+  chainDays: number
+  days: number
+  availableDays: number
+  ok: boolean
+  start: string | null
+  end: string | null
 }
 
 export interface TaskSchedule {
@@ -161,6 +224,8 @@ export interface Schedule {
   criticalPath: string[]
   summary: ScheduleSummary
   buffer: BufferResult
+  releases: ReleaseResult[]
+  feedingBuffers: FeedingBuffer[]
 }
 
 export interface Project {
@@ -175,6 +240,7 @@ export interface Project {
   buffer: BufferSettings
   rules: Rules
   baseline: Baseline | null
+  releases: Release[]
   chainTemplates: ChainStep[] | null
   createdAt: string
   updatedAt: string
@@ -237,6 +303,8 @@ export interface TaskUpdate {
   progressFromChecklist?: boolean
   epic?: EpicInfo
   clearEpic?: boolean
+  /** "" clears */
+  description?: string
 }
 
 export interface EpicTaskIn {

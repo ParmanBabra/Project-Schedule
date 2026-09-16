@@ -41,12 +41,14 @@ test('Epic: สร้างจากงานที่มีอยู่ (โห
   const be = project.tasks.find((t: { name: string }) => t.name === 'พัฒนา Backend')
   expect(be.parentId).toBe(epic.id)
   await expect(page.getByTestId(`epic-badge-${epic.id}`)).toBeVisible()
-  const barColor = await page.locator(`[data-testid="bar-${be.id}"]`).evaluate((el) => getComputedStyle(el).backgroundColor)
-  // critical highlight keeps Backend pink; turn it off to see the epic colour
+  // tasks inside an Epic always keep the Epic colour; critical is shown as a ring while the highlight is on
+  const bar = page.locator(`[data-testid="bar-${be.id}"]`)
+  const ring = () => bar.evaluate((el) => getComputedStyle(el).boxShadow)
+  await expect(bar).toHaveCSS('background-color', 'rgb(31, 158, 137)')
+  await expect.poll(ring).toContain('inset') // box-shadow animates: wait for the ring to settle
   await page.getByText('Critical path', { exact: true }).first().click()
-  const barColorOff = await page.locator(`[data-testid="bar-${be.id}"]`).evaluate((el) => getComputedStyle(el).backgroundColor)
-  expect(barColor).not.toBe(barColorOff)
-  expect(barColorOff).toBe('rgb(31, 158, 137)')
+  await expect(bar).toHaveCSS('background-color', 'rgb(31, 158, 137)')
+  await expect(bar).toHaveCSS('box-shadow', 'none')
 
   // Epic panel
   await page.getByRole('button', { name: /^พัฒนาระบบ/ }).first().click()

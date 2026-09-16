@@ -1,7 +1,7 @@
 import type { ProjectOut, Task, TaskSchedule } from '@/features/projects/types'
 
 function task(id: string, name: string, duration: number, order: number, extra: Partial<Task> = {}): Task {
-  return { id, name, duration, progress: 0, isMilestone: false, constraint: null, color: null, parentId: null, collapsed: false, order, estimate: null, checklist: [], progressFromChecklist: true, epic: null, ...extra }
+  return { id, name, duration, progress: 0, isMilestone: false, constraint: null, color: null, parentId: null, collapsed: false, order, estimate: null, checklist: [], progressFromChecklist: true, epic: null, description: '', ...extra }
 }
 
 function sched(id: string, wbs: string, start: string, end: string, extra: Partial<TaskSchedule> = {}): TaskSchedule {
@@ -67,9 +67,11 @@ export function sampleProject(): ProjectOut {
       lagUnit: 'working',
       defaultDependency: { type: 'FS', lag: 0 },
       schedulingMode: 'auto',
+      releaseSuccessors: 'immediate',
       bufferZones: { yellow: 100, red: 120 },
     },
     baseline: null,
+    releases: [],
     chainTemplates: null,
     createdAt: '2026-09-14T09:00:00Z',
     updatedAt: '2026-09-14T09:00:00Z',
@@ -85,6 +87,8 @@ export function sampleProject(): ProjectOut {
       criticalPath: ['t1', 't2', 't4', 't6'],
       summary: { taskCount: 6, criticalCount: 4, nearCriticalCount: 0, progress: 32, chainDays: 17, plannedEnd: '2026-10-06', committedEnd: '2026-10-19', lateCount: 0, baselinePlannedEnd: null },
       buffer: { method: 'ccpm', chainDays: 17, days: 9, start: '2026-10-06', end: '2026-10-19', committedEnd: '2026-10-19', managementReserveDays: 1, managementReserveEnd: '2026-10-20', percentUsed: 50, note: null, consumedPercent: null, status: null, chainProgress: 32, consumedDays: null, aheadDays: 0, paddingWarning: false, paddingNote: null },
+      releases: [],
+      feedingBuffers: [],
     },
   }
 }

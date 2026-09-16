@@ -17,6 +17,7 @@ class TaskCreate(CamelModel):
     color: str | None = None
     estimate: Estimate | None = None
     after_id: str | None = None  # insert right after this sibling; default = last
+    description: str = Field(default="", max_length=2000)
 
 
 class TaskUpdate(CamelModel):
@@ -34,6 +35,7 @@ class TaskUpdate(CamelModel):
     progress_from_checklist: bool | None = None
     epic: EpicInfo | None = None  # set/replace the Epic info of a group
     clear_epic: bool = False  # turn an Epic back into a plain group
+    description: str | None = Field(default=None, max_length=2000)  # "" clears
 
 
 class ChecklistItemIn(CamelModel):

@@ -1,12 +1,12 @@
 import { writeFileSync } from 'node:fs';
 
 const tasks = [
-  { n: 1, name: 'รวบรวมความต้องการ', s: 0, e: 2, crit: true, pg: 100 },
-  { n: 2, name: 'ออกแบบระบบ', s: 3, e: 9, crit: true, pg: 40 },
-  { n: 3, name: 'ออกแบบ UI', s: 3, e: 8, crit: false, pg: 25 },
-  { n: 4, name: 'พัฒนา Backend', s: 10, e: 17, crit: true, pg: 0 },
-  { n: 5, name: 'พัฒนา Frontend', s: 9, e: 15, crit: false, pg: 0 },
-  { n: 6, name: 'ทดสอบระบบ', s: 18, e: 22, crit: true, pg: 0 },
+  { n: 1, name: 'รวบรวมความต้องการ', s: 0, e: 2, crit: true, pg: 100, who: ['ส'] },
+  { n: 2, name: 'ออกแบบระบบ', s: 3, e: 9, crit: true, pg: 40, who: ['ด'] },
+  { n: 3, name: 'ออกแบบ UI', s: 3, e: 8, crit: false, pg: 25, who: ['ด'] },
+  { n: 4, name: 'พัฒนา Backend', s: 10, e: 17, crit: true, pg: 0, who: ['ว'] },
+  { n: 5, name: 'พัฒนา Frontend', s: 9, e: 15, crit: false, pg: 0, who: ['ด'] },
+  { n: 6, name: 'ทดสอบระบบ', s: 18, e: 22, crit: true, pg: 0, who: ['ส', 'ว'] },
 ];
 const who = { ส: '#6a4fd8', ด: '#e0457b', ว: '#1f9e89' };
 const icon = (p, s = 24) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
@@ -62,6 +62,7 @@ const css = `
     .input { height: 44px; border-radius: 12px; background: #f2f0fa; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; } .input.ro { color: #6f6893; }
     .dep { display: flex; align-items: center; gap: 8px; height: 44px; border-radius: 12px; background: #f2f0fa; padding: 0 12px; } .dep-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .dep.add { background: transparent; border: 2px dashed #d6d1ea; color: #8a83a8; justify-content: center; }
     .pill { height: 26px; padding: 0 10px; border-radius: 999px; background: #6a4fd8; color: #ffffff; font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; } .pill.soft { background: #e6e1fb; color: #4e37b0; }
+    .asg { position: absolute; display: inline-flex; align-items: center; } .asg-av { width: 22px; height: 22px; box-shadow: 0 0 0 2px #ffffff; } .asg-av + .asg-av { margin-left: -6px; } .asg-av.over { box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #e0457b; }
     .av { width: 24px; height: 24px; border-radius: 999px; color: #ffffff; font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .cpm { border-radius: 14px; background: #ffe0ec; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; } .cpm-title { font-size: 12px; font-weight: 500; color: #b8285a; }
     .cpm-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; } .cpm-grid div { display: flex; flex-direction: column; } .cpm-grid span { font-size: 11px; color: #b8285a; } .cpm-grid b { font-size: 12px; font-weight: 600; }
@@ -106,7 +107,10 @@ function ganttMobile(selected = null) {
   for (let i = 0; i < 3; i++) rows += `<div class="we-col" style="left:${(i * 7 + 5) * DAY}px;width:${2 * DAY}px"></div>`;
   for (let i = 0; i <= tasks.length; i++) rows += '<div class="grid-row"></div>';
   rows += `<div class="today" style="left:${DAY}px"></div>`;
-  tasks.forEach((t, i) => { rows += `<div class="tb${t.crit ? ' crit' : ''}${selected === t.n ? ' sel' : ''}" style="left:${t.s * DAY}px;top:${i * ROW + 8}px;width:${(t.e - t.s + 1) * DAY}px"><div class="pg" style="width:${t.pg}%"></div></div>`; });
+  tasks.forEach((t, i) => {
+    rows += `<div class="tb${t.crit ? ' crit' : ''}${selected === t.n ? ' sel' : ''}" style="left:${t.s * DAY}px;top:${i * ROW + 8}px;width:${(t.e - t.s + 1) * DAY}px"><div class="pg" style="width:${t.pg}%"></div></div>`;
+    if (t.who) rows += `<div class="asg" style="left:${(t.e + 1) * DAY + 20}px;top:${i * ROW + 9}px">${t.who.map((k) => `<span class="av asg-av${k === 'ด' ? ' over' : ''}" style="background:${who[k]}">${k}</span>`).join('')}</div>`;
+  });
   rows += `<div class="ms" style="left:${23 * DAY - 7}px;top:${tasks.length * ROW + 13}px"></div>`;
   let names = '<div class="nc head">ชื่องาน</div>';
   for (const t of tasks) names += `<div class="nc"><span class="dot${t.crit ? ' crit' : ''}"></span><span class="t">${t.name}</span></div>`;

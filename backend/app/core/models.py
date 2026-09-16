@@ -19,6 +19,7 @@ ProgressRollup = Literal["duration", "count", "effort"]
 LateDetection = Literal["linear", "baseline", "overdue"]
 LagUnit = Literal["working", "calendar"]
 SchedulingMode = Literal["auto", "manual"]
+ReleaseSuccessors = Literal["immediate", "after_buffer"]  # BUF-9: successors of a release milestone
 
 RISK_PERCENT: dict[str, int] = {"low": 10, "medium": 15, "high": 25}
 PERT_Z: dict[int, float] = {84: 1.0, 98: 2.0}
@@ -38,7 +39,9 @@ class CamelModel(BaseModel):
 
 
 class Constraint(CamelModel):
-    type: Literal["SNET"] = "SNET"
+    """SNET = start no earlier than; FNLT = finish no later than (float may go negative)."""
+
+    type: Literal["SNET", "FNLT"] = "SNET"
     date: date
 
 
@@ -91,6 +94,7 @@ class Task(CamelModel):
     checklist: list[ChecklistItem] = Field(default_factory=list)
     progress_from_checklist: bool = True
     epic: EpicInfo | None = None  # set => this task is an Epic (always a summary row)
+    description: str = Field(default="", max_length=2000)  # free-text notes (TSK-2 หมายเหตุ)
 
 
 class Dependency(CamelModel):
@@ -139,11 +143,17 @@ class Rules(CamelModel):
     default_dependency: DefaultDependency = Field(default_factory=DefaultDependency)
     scheduling_mode: SchedulingMode = "auto"
     buffer_zones: BufferZones = Field(default_factory=BufferZones)
+    release_successors: ReleaseSuccessors = "immediate"
 
 
 class BaselineTask(CamelModel):
     start: date
     end: date
+
+
+class BaselineRelease(CamelModel):
+    planned_end: date
+    buffer_days: int = 0
 
 
 class Baseline(CamelModel):
@@ -154,6 +164,21 @@ class Baseline(CamelModel):
     chain_days: int
     buffer_days: int = 0  # buffer is sized once, at baseline time (CCPM)
     tasks: dict[str, BaselineTask] = Field(default_factory=dict)
+    releases: dict[str, BaselineRelease] = Field(default_factory=dict)  # by release id (BUF-8)
+
+
+class Release(CamelModel):
+    """A delivery point with its own schedule buffer (BUF-8, Critical Chain "multi-release").
+
+    Every leaf task belongs to the earliest release whose milestone it feeds; tasks feeding no
+    release milestone belong to the last release. The buffer of a release is sized from the
+    chain of ITS OWN tasks only, so earlier releases are never buffered twice.
+    """
+
+    id: str
+    name: str = Field(min_length=1, max_length=120)
+    milestone_task_id: str
+    days: int | None = Field(default=None, ge=0, le=3650)  # override the computed buffer size
 
 
 class Project(CamelModel):
@@ -168,6 +193,7 @@ class Project(CamelModel):
     buffer: BufferSettings = Field(default_factory=BufferSettings)
     rules: Rules = Field(default_factory=Rules)
     baseline: Baseline | None = None
+    releases: list[Release] = Field(default_factory=list)
     chain_templates: list[ChainStep] | None = None  # last-used rows of the chain dialog
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)

@@ -21,6 +21,7 @@ from app.features.epics.router import router as epics_router
 from app.features.io.router import router as io_router
 from app.features.projects.baseline import router as baseline_router
 from app.features.projects.router import router as projects_router
+from app.features.releases.router import router as releases_router
 from app.features.resources.router import router as resources_router
 from app.features.scheduling.router import router as scheduling_router
 from app.features.settings.router import router as settings_router
@@ -57,6 +58,7 @@ def create_app() -> FastAPI:
         baseline_router,
         tasks_router,
         epics_router,
+        releases_router,
         dependencies_router,
         scheduling_router,
         settings_router,

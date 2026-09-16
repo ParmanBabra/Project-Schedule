@@ -17,14 +17,22 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
 from app.core.errors import CycleDetected, ValidationFailed
-from app.core.models import PERT_Z, RISK_PERCENT, Dependency, Project, Task
+from app.core.models import PERT_Z, RISK_PERCENT, BufferSettings, Dependency, Project, Release, Task
 
 from .calendar import WorkCalendar
-from .schemas import BufferResult, Schedule, ScheduleSummary, TaskSchedule
+from .schemas import (
+    BufferResult,
+    FeedingBuffer,
+    ReleaseResult,
+    Schedule,
+    ScheduleSummary,
+    TaskSchedule,
+)
 
 START_BASED = {"SS", "SF"}  # predecessor side is its *start*
 FINISH_TO_START_SIDE = {"FS": "start", "SS": "start", "FF": "finish", "SF": "finish"}
@@ -257,62 +265,89 @@ def compute_schedule(project: Project, today: date | None = None) -> Schedule:
         return b
 
     # ---------------------------------------------------------- forward pass
-    for nid in order:
-        n = nodes[nid]
-        if n.is_summary:
-            leaf_nodes = [nodes[i] for i in n.leaves]
-            if not leaf_nodes:  # empty Epic: sits at the project start with no length
-                n.es = n.ef = 0
-                n.dur = 0
+    def forward(gate: dict[str, int]) -> None:
+        """ES/EF for every node in topological order. `gate` delays everything that hangs off
+        a release milestone by that release's buffer (rules.release_successors = after_buffer)."""
+        for nid in order:
+            n = nodes[nid]
+            if n.is_summary:
+                leaf_nodes = [nodes[i] for i in n.leaves]
+                if not leaf_nodes:  # empty Epic: sits at the project start with no length
+                    n.es = n.ef = 0
+                    n.dur = 0
+                    continue
+                n.es = min(x.es for x in leaf_nodes)
+                n.ef = max(x.ef for x in leaf_nodes)
+                n.dur = n.ef - n.es
                 continue
-            n.es = min(x.es for x in leaf_nodes)
-            n.ef = max(x.ef for x in leaf_nodes)
-            n.dur = n.ef - n.es
-            continue
-        es = 0
-        for e in incoming[nid]:
-            if e.type == "ROLLUP":
-                continue
-            p = nodes[e.src]
-            if e.type == "FS":
-                bound = shift(p.ef, e.lag)
-            elif e.type == "SS":
-                bound = shift(p.es, e.lag)
-            elif e.type == "FF":
-                bound = shift(p.ef, e.lag) - n.dur
-            else:  # SF
-                bound = shift(p.es, e.lag) - n.dur
-            es = max(es, bound)
-        c = n.task.constraint
-        if c is not None and c.type == "SNET":
-            es = max(es, cal.index_of(c.date))
-        n.es = es
-        n.ef = es + n.dur
+            es = 0
+            for e in incoming[nid]:
+                if e.type == "ROLLUP":
+                    continue
+                p = nodes[e.src]
+                g = gate.get(e.src, 0)
+                if e.type == "FS":
+                    bound = shift(p.ef + g, e.lag)
+                elif e.type == "SS":
+                    bound = shift(p.es + g, e.lag)
+                elif e.type == "FF":
+                    bound = shift(p.ef + g, e.lag) - n.dur
+                else:  # SF
+                    bound = shift(p.es + g, e.lag) - n.dur
+                es = max(es, bound)
+            c = n.task.constraint
+            if c is not None and c.type == "SNET":
+                es = max(es, cal.index_of(c.date))
+            n.es = es
+            n.ef = es + n.dur
+
+    gate: dict[str, int] = {}
+    forward(gate)
+    releases_valid, members, feeders = release_membership(project, nodes, outgoing)
+    if project.rules.release_successors == "after_buffer" and releases_valid:
+        # size every release buffer from this first pass (its own chain never depends on the
+        # gate), then push whatever hangs off a release milestone past that buffer and go again
+        for r in releases_valid:
+            chain, path = release_chain(nodes, order, incoming, set(members[r.id]))
+            days, _, _ = size_buffer(project.buffer, chain, path, nodes, r.days)
+            if days > 0:
+                gate[r.milestone_task_id] = days
+        if gate:
+            forward(gate)
 
     project_end = max((n.ef for n in nodes.values()), default=0)
+    # every task that feeds a release milestone must be done by that milestone: its own
+    # deadline for the backward pass (BUF-8), instead of the end of the whole project
+    deadline: dict[str, int] = {}
+    for r in releases_valid:
+        ms_ef = nodes[r.milestone_task_id].ef
+        for nid in members[r.id]:
+            if nid in feeders[r.id]:
+                deadline[nid] = ms_ef
 
     # --------------------------------------------------------- backward pass
     finish_bound: dict[str, int] = {}
     start_bound: dict[str, int | None] = {}
     for nid in reversed(order):
         n = nodes[nid]
-        lf = project_end
+        lf = deadline.get(nid, project_end)
         ls_from_start: int | None = None
+        g = gate.get(nid, 0)
         for e in outgoing[nid]:
             if e.type == "ROLLUP":
                 continue
             s = nodes[e.dst]
             if e.type == "FS":
-                b = unshift(s.ls, e.lag)
+                b = unshift(s.ls, e.lag) - g
                 lf = min(lf, b)
             elif e.type == "FF":
-                b = unshift(s.lf, e.lag)
+                b = unshift(s.lf, e.lag) - g
                 lf = min(lf, b)
             elif e.type == "SS":
-                b = unshift(s.ls, e.lag)  # bound on this node's start
+                b = unshift(s.ls, e.lag) - g  # bound on this node's start
                 ls_from_start = b if ls_from_start is None else min(ls_from_start, b)
             else:  # SF: this node's start <= successor finish - lag
-                b = unshift(s.lf, e.lag)
+                b = unshift(s.lf, e.lag) - g
                 ls_from_start = b if ls_from_start is None else min(ls_from_start, b)
         if n.is_summary:
             # constraints coming from the summary's own successors flow to its leaves
@@ -328,6 +363,9 @@ def compute_schedule(project: Project, today: date | None = None) -> Schedule:
                     lf = min(lf, sb + n.dur)
         if ls_from_start is not None:
             lf = min(lf, ls_from_start + n.dur)
+        c = n.task.constraint
+        if c is not None and c.type == "FNLT":  # deadline: float may go negative
+            lf = min(lf, cal.index_of(cal.prev_working(c.date)) + 1)
         n.lf = lf
         n.ls = lf - n.dur
         n.tf = n.ls - n.es
@@ -337,20 +375,21 @@ def compute_schedule(project: Project, today: date | None = None) -> Schedule:
         if n.is_summary:
             continue
         slack: int | None = None
+        g = gate.get(nid, 0)
         for e in outgoing[nid]:
             if e.type == "ROLLUP":
                 continue
             s = nodes[e.dst]
             if e.type == "FS":
-                v = s.es - shift(n.ef, e.lag)
+                v = s.es - shift(n.ef + g, e.lag)
             elif e.type == "SS":
-                v = s.es - shift(n.es, e.lag)
+                v = s.es - shift(n.es + g, e.lag)
             elif e.type == "FF":
-                v = s.ef - shift(n.ef, e.lag)
+                v = s.ef - shift(n.ef + g, e.lag)
             else:
-                v = s.ef - shift(n.es, e.lag)
+                v = s.ef - shift(n.es + g, e.lag)
             slack = v if slack is None else min(slack, v)
-        n.ff = max(0, project_end - n.ef) if slack is None else max(0, slack)
+        n.ff = max(0, deadline.get(nid, project_end) - n.ef) if slack is None else max(0, slack)
 
     # summaries: float = min of leaves, late dates derived from it
     for n in nodes.values():
@@ -513,7 +552,18 @@ def compute_schedule(project: Project, today: date | None = None) -> Schedule:
         late_count=sum(1 for nid in leaves_all if out[nid].health == "late"),
         baseline_planned_end=project.baseline.planned_end if project.baseline else None,
     )
-    return Schedule(tasks=out, critical_path=critical_path, summary=summary, buffer=buffer)
+    releases = compute_releases(
+        project, nodes, cal, out, order, incoming, releases_valid, members, feeders, rolled_progress
+    )
+    feeding = compute_feeding_buffers(project, nodes, cal, out, order, incoming)
+    return Schedule(
+        tasks=out,
+        critical_path=critical_path,
+        summary=summary,
+        buffer=buffer,
+        releases=releases,
+        feeding_buffers=feeding,
+    )
 
 
 PADDING_MIN_STARTED = 3  # BUF-7 needs a few data points before it speaks up
@@ -567,24 +617,25 @@ def _milestone_date(cal: WorkCalendar, boundary: int) -> date:
 # ----------------------------------------------------------------------- buffer
 
 
-def compute_buffer(
-    project: Project,
+def size_buffer(
+    settings: BufferSettings,
+    chain: int,
+    chain_tasks: list[str],
     nodes: dict[str, _Node],
-    cal: WorkCalendar,
-    project_end: int,
-    critical_path: list[str],
-) -> BufferResult:
-    settings = project.buffer
-    chain = project_end
+    days_override: int | None = None,
+) -> tuple[int, int | None, str | None]:
+    """(days, percent used, note) for a chain of `chain` working days per the buffer method.
+
+    `days_override` wins over everything (project-wide `settings.days` or a release's own).
+    """
     note: str | None = None
     percent_used: int | None = None
-
-    if settings.days is not None:
-        days = settings.days
-        note = "กำหนดจำนวนวันเอง"
-    elif chain == 0:
-        days = 0
-    elif settings.method == "ccpm":
+    override = days_override if days_override is not None else settings.days
+    if override is not None:
+        return override, None, "กำหนดจำนวนวันเอง"
+    if chain == 0:
+        return 0, None, None
+    if settings.method == "ccpm":
         percent_used = settings.ccpm_ratio
         days = math.ceil(chain * settings.ccpm_ratio / 100)
     elif settings.method == "percent":
@@ -596,7 +647,7 @@ def compute_buffer(
         z = PERT_Z[settings.pert_confidence]
         variance = 0.0
         missing = 0
-        for tid in critical_path:
+        for tid in chain_tasks:
             est = nodes[tid].task.estimate
             if est is None:
                 if nodes[tid].dur > 0:
@@ -607,8 +658,21 @@ def compute_buffer(
         days = math.ceil(z * math.sqrt(variance))
         if missing:
             note = f"ยังไม่มีค่าประเมิน 3 ค่าใน {missing} งานบน critical path"
-    if settings.days is None and chain > 5:
+    if chain > 5:
         days = max(days, 1)
+    return days, percent_used, note
+
+
+def compute_buffer(
+    project: Project,
+    nodes: dict[str, _Node],
+    cal: WorkCalendar,
+    project_end: int,
+    critical_path: list[str],
+) -> BufferResult:
+    settings = project.buffer
+    chain = project_end
+    days, percent_used, note = size_buffer(settings, chain, critical_path, nodes)
 
     mr_days = math.ceil(chain * settings.management_reserve_percent / 100) if chain else 0
     # the buffer starts where the plan ends; once a baseline exists it is frozen there
@@ -643,6 +707,231 @@ def compute_buffer(
         ahead_days=ahead_days,
         committed_end=committed_end or end,
     )
+
+
+# ------------------------------------------------------------------ releases
+
+
+def release_membership(
+    project: Project, nodes: dict[str, _Node], outgoing: dict[str, list[_Edge]]
+) -> tuple[list[Release], dict[str, list[str]], dict[str, set[str]]]:
+    """Releases ordered by milestone date, the leaf tasks of each one, and who feeds each milestone.
+
+    A leaf belongs to the earliest release whose milestone it can reach through dependencies
+    (the milestone itself included). Leaves that reach no release milestone fall into the last
+    release, so every task is covered by exactly one buffer. Releases whose milestone no longer
+    exists (or is a group) are skipped.
+    """
+    valid = [
+        r
+        for r in project.releases
+        if r.milestone_task_id in nodes and not nodes[r.milestone_task_id].is_summary
+    ]
+    if not valid:
+        return [], {}, {}
+    valid.sort(key=lambda r: (nodes[r.milestone_task_id].ef, nodes[r.milestone_task_id].es, r.id))
+    # reachability: every leaf that can reach each milestone (reverse BFS over real edges)
+    incoming: dict[str, list[str]] = defaultdict(list)
+    for src, edges in outgoing.items():
+        for e in edges:
+            if e.type != "ROLLUP":
+                incoming[e.dst].append(src)
+    feeders: dict[str, set[str]] = {}
+    for r in valid:
+        seen = {r.milestone_task_id}
+        stack = [r.milestone_task_id]
+        while stack:
+            cur = stack.pop()
+            for p in incoming.get(cur, []):
+                if p not in seen:
+                    seen.add(p)
+                    stack.append(p)
+        feeders[r.id] = seen
+    members: dict[str, list[str]] = {r.id: [] for r in valid}
+    for nid, n in nodes.items():
+        if n.is_summary:
+            continue
+        home = next((r.id for r in valid if nid in feeders[r.id]), valid[-1].id)
+        members[home].append(nid)
+    return valid, members, feeders
+
+
+def release_chain(
+    nodes: dict[str, _Node],
+    order: list[str],
+    incoming: dict[str, list[_Edge]],
+    member_set: set[str],
+) -> tuple[int, list[str]]:
+    """Longest path (sum of durations) through the release's own tasks, and the tasks on it.
+
+    Predecessors outside the release count as the start of the chain; lags and waiting gaps
+    are not part of the chain, so a task parked by a constraint does not inflate the buffer.
+    """
+    dist: dict[str, int] = {}
+    prev: dict[str, str | None] = {}
+    best_end: str | None = None
+    for nid in order:
+        if nid not in member_set:
+            continue
+        n = nodes[nid]
+        best_p: str | None = None
+        best_d = 0
+        for e in incoming[nid]:
+            if e.type == "ROLLUP" or e.src not in member_set:
+                continue
+            if dist[e.src] > best_d or best_p is None:
+                best_d, best_p = dist[e.src], e.src
+        dist[nid] = best_d + n.dur
+        prev[nid] = best_p
+        if best_end is None or dist[nid] > dist[best_end]:
+            best_end = nid
+    if best_end is None:
+        return 0, []
+    path: list[str] = []
+    cur: str | None = best_end
+    while cur is not None:
+        path.append(cur)
+        cur = prev[cur]
+    path.reverse()
+    return dist[best_end], path
+
+
+def compute_releases(
+    project: Project,
+    nodes: dict[str, _Node],
+    cal: WorkCalendar,
+    out: dict[str, TaskSchedule],
+    order: list[str],
+    incoming: dict[str, list[_Edge]],
+    valid: list[Release],
+    members: dict[str, list[str]],
+    feeders: dict[str, set[str]],
+    progress_of: Callable[[list[str]], int],
+) -> list[ReleaseResult]:
+    results: list[ReleaseResult] = []
+    for r in valid:
+        ids = members[r.id]
+        ms = nodes[r.milestone_task_id]
+        member_set = set(ids)
+        chain, path = release_chain(nodes, order, incoming, member_set)
+        days, percent_used, note = size_buffer(project.buffer, chain, path, nodes, r.days)
+        # the release ends at its milestone, or later if orphan tasks (last release) run past it
+        boundary = max([ms.ef] + [nodes[i].ef for i in ids if i not in feeders[r.id]])
+        planned_end = _milestone_date(cal, boundary) if ids else None
+        end = cal.day(boundary + days - 1) if days > 0 else planned_end
+        committed_end: date | None = None
+        ahead = 0
+        consumed_days: int | None = None
+        consumed_percent: int | None = None
+        status: str | None = None
+        critical_ids = [i for i in ids if out[i].is_critical and nodes[i].dur > 0]
+        progress = progress_of(ids)
+        chain_progress = progress_of(critical_ids or [i for i in path if nodes[i].dur > 0] or ids)
+        base = project.baseline.releases.get(r.id) if project.baseline else None
+        if base is not None and planned_end is not None:
+            base_boundary = cal.index_of(base.planned_end) + 1
+            committed_end = base.planned_end
+            if base.buffer_days > 0:
+                committed_end = cal.day(base_boundary + base.buffer_days - 1)
+            if boundary < base_boundary:
+                ahead = base_boundary - boundary
+            slip = max(0, boundary - base_boundary)
+            consumed_days = slip
+            ref = base.buffer_days or days
+            if ref > 0:
+                consumed_percent = min(999, int(round(slip * 100 / ref)))
+                z = project.rules.buffer_zones
+                ratio = consumed_percent / max(chain_progress, 1) * 100
+                if consumed_percent >= 100 or ratio > z.red:
+                    status = "red"
+                elif ratio > z.yellow or (consumed_percent > 0 and chain_progress == 0):
+                    status = "yellow"
+                else:
+                    status = "green"
+        results.append(
+            ReleaseResult(
+                id=r.id,
+                name=r.name,
+                milestone_task_id=r.milestone_task_id,
+                task_ids=sorted(ids, key=lambda i: (nodes[i].es, nodes[i].ef, i)),
+                chain_days=chain,
+                days=days,
+                planned_end=planned_end,
+                end=end,
+                committed_end=committed_end or end,
+                progress=progress,
+                chain_progress=chain_progress,
+                chain_task_ids=path,
+                consumed_percent=consumed_percent,
+                consumed_days=consumed_days,
+                status=status,
+                ahead_days=ahead,
+                percent_used=percent_used,
+                note=note,
+            )
+        )
+    return results
+
+
+# ------------------------------------------------------------ feeding buffers
+
+
+def compute_feeding_buffers(
+    project: Project,
+    nodes: dict[str, _Node],
+    cal: WorkCalendar,
+    out: dict[str, TaskSchedule],
+    order: list[str],
+    incoming: dict[str, list[_Edge]],
+) -> list[FeedingBuffer]:
+    """BUF-6 (ccpm only): at every point where a non-critical chain joins a critical task,
+    the feeding chain should keep ccpm_ratio% of its length as slack. We do not move tasks;
+    we report the recommended size and whether the chain's float already covers it."""
+    if project.buffer.method != "ccpm":
+        return []
+    ratio = project.buffer.ccpm_ratio
+    is_leaf = {nid for nid, n in nodes.items() if not n.is_summary}
+    noncrit = {nid for nid in is_leaf if not out[nid].is_critical}
+    dist: dict[str, int] = {}
+    for nid in order:
+        if nid not in noncrit:
+            continue
+        best = 0
+        for e in incoming[nid]:
+            if e.type != "ROLLUP" and e.src in noncrit:
+                best = max(best, dist[e.src])
+        dist[nid] = best + nodes[nid].dur
+    results: list[FeedingBuffer] = []
+    seen: set[str] = set()
+    for nid in order:
+        if nid not in is_leaf or not out[nid].is_critical:
+            continue
+        for e in incoming[nid]:
+            if e.type == "ROLLUP" or e.src not in noncrit or e.src in seen:
+                continue
+            chain = dist[e.src]
+            if chain <= 0:
+                continue
+            seen.add(e.src)
+            days = math.ceil(chain * ratio / 100)
+            if chain > 5:
+                days = max(days, 1)
+            available = out[e.src].total_float
+            src_ef = nodes[e.src].ef
+            results.append(
+                FeedingBuffer(
+                    from_task_id=e.src,
+                    to_task_id=nid,
+                    dependency_id=e.dep_id,
+                    chain_days=chain,
+                    days=days,
+                    available_days=available,
+                    ok=available >= days,
+                    start=cal.day(src_ef) if days > 0 else None,
+                    end=cal.day(src_ef + days - 1) if days > 0 else None,
+                )
+            )
+    return results
 
 
 # ------------------------------------------------------------------- utilities

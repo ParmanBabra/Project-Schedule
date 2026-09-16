@@ -16,6 +16,7 @@ from app.core.models import (
     CamelModel,
     ChainStep,
     Dependency,
+    Release,
     Rules,
     Task,
 )
@@ -31,4 +32,5 @@ class ProjectState(CamelModel):
     assignments: list[Assignment] = Field(default_factory=list)
     buffer: BufferSettings = Field(default_factory=BufferSettings)
     rules: Rules = Field(default_factory=Rules)
+    releases: list[Release] = Field(default_factory=list)
     chain_templates: list[ChainStep] | None = None

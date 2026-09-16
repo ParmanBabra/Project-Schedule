@@ -64,6 +64,8 @@ const css = `
     .tl { flex: 1; position: relative; overflow: hidden; }
     .days { display: flex; height: 56px; border-bottom: 1px solid #ece9f6; } .wk { display: flex; flex-direction: column; flex-shrink: 0; border-right: 1px solid #ece9f6; } .wk-name { height: 26px; display: flex; align-items: center; padding: 0 8px; font-size: 12px; font-weight: 500; color: #4e37b0; white-space: nowrap; } .wk-days { display: flex; } .d { height: 30px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #8a83a8; } .d.we { color: #c9c4e0; }
     .rows { position: relative; } .grid-row { height: 40px; border-bottom: 1px solid #f1eff8; } .we-col { position: absolute; top: 0; bottom: 0; background: #f7f5fc; }
+    .feed { position: absolute; height: 12px; border-radius: 999px; border: 2px dotted #a49dc0; background: repeating-linear-gradient(135deg, #e8e5f3 0 4px, #ffffff 4px 8px); } .feed.short { border-color: #e0457b; background: repeating-linear-gradient(135deg, #ffe0ec 0 4px, #ffffff 4px 8px); }
+    .asg { position: absolute; display: inline-flex; align-items: center; } .asg-av { width: 22px; height: 22px; border-radius: 999px; color: #ffffff; font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #ffffff; } .asg-av + .asg-av { margin-left: -6px; } .asg-av.over { box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #e0457b; } .asg-av.more { background: #e8e5f3; color: #514a72; }
     .bar { position: absolute; height: 24px; border-radius: 999px; background: #8fd3c7; overflow: hidden; display: flex; align-items: center; padding: 0 10px; font-size: 11px; color: #1f4d45; font-weight: 500; white-space: nowrap; } .bar.crit { background: #e0457b; color: #ffffff; } .bar .pg { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(0,0,0,0.12); } .bar span { position: relative; }
     .sumbar { position: absolute; height: 10px; background: #2f2a4a; border-radius: 3px; } .sumbar.crit { background: #e0457b; } .sumcap { position: absolute; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 9px solid #2f2a4a; } .sumcap.crit { border-top-color: #e0457b; }
     .rows .ms { position: absolute; width: 16px; height: 16px; background: #ffd166; border-radius: 4px; transform: rotate(45deg); } .rows .ms.deliver { background: #2f2a4a; }
@@ -146,6 +148,7 @@ const settingsDesktop = wrap(`<div style="width:1280px;height:1400px;padding:16p
       <div class="sec-head"><h2>กติกาการคำนวณ</h2><p>ทุกข้อมีค่าเริ่มต้นตามหลักที่ใช้กันทั่วไป เปลี่ยนได้ทุกเมื่อ</p></div>
       <div class="rule"><div class="rl"><h3>งานไหนนับเป็น critical ${I.info(14)}</h3><span class="faint">Critical Path Method</span></div><div class="rr"><div class="seg"><span class="on">เลื่อนไม่ได้เลย</span><span>รวมงานที่เลื่อนได้ไม่เกิน N วัน</span></div><p>งานที่เลื่อนแล้วโครงการเลื่อนตามทันที</p><div class="ex">ตอนนี้มี critical <b>4 งาน</b></div></div></div>
       <div class="rule"><div class="rl"><h3>เวลารอ (lag) นับอย่างไร ${I.info(14)}</h3><span class="faint">MS Project / Primavera default</span></div><div class="rr"><div class="seg"><span class="on">ข้ามวันหยุด</span><span>นับทุกวันรวมวันหยุด</span></div><p>รอ 2 วันจากศุกร์ จะได้วันอังคาร เหมาะกับงานที่คนต้องทำ</p></div></div>
+      <div class="rule"><div class="rl"><h3>งานที่ต่อจากจุดส่งมอบ เริ่มเมื่อไร ${I.info(14)}</h3><span class="faint">Critical Chain: buffer ไม่ใช่เวลาว่าง</span></div><div class="rr"><div class="seg"><span class="on">เริ่มทันทีที่ milestone ถึง</span><span>รอให้พ้นเวลาเผื่อก่อน</span></div><p>ตามหลัก Critical Chain เวลาเผื่อเป็นประกัน ไม่ใช่เวลาที่จองไว้ · เลือก "รอ" เมื่องานผูกกับวันสัญญาส่งจริง เช่น ลูกค้าตรวจรับ</p></div></div>
       <div class="rule"><div class="rl"><h3>เมื่อลากงานไปวางวันอื่น ${I.info(14)}</h3><span class="faint">Auto vs manual scheduling</span></div><div class="rr"><div class="seg"><span class="on">ระบบขยับให้ตามความสัมพันธ์</span><span>อยู่ที่วางไว้ ระบบแค่เตือน</span></div><p>ลากแล้วถ้าขัดกับงานก่อนหน้า ระบบจะดันไปวันที่เป็นไปได้ที่ใกล้ที่สุด</p></div></div>
       <div class="rule off"><div class="rl"><h3>วิธีตรวจว่างานล่าช้า ${I.info(14)}</h3><span class="faint">Earned Schedule</span></div><div class="rr"><div class="seg"><span class="on">เทียบเวลาที่ผ่านไป</span><span>เทียบกับ baseline</span><span>เลยกำหนดเท่านั้น</span></div><p>ตัวเลือก "เทียบกับ baseline" ใช้ได้เมื่อบันทึก baseline แล้ว</p></div></div>
     </div>
@@ -177,23 +180,30 @@ const settingsMobile = wrap(`<div class="phone">
 </div>`);
 
 // ---------- Gantt with WBS + buffer ----------
-function ganttBuffer() {
+function ganttBuffer(variant = 'project') {
   const DAY = 24, ROW = 40, W = 42 * DAY;
+  const releases = variant === 'releases';
   const weeks = [['14 – 20 ก.ย.', [14, 15, 16, 17, 18, 19, 20]], ['21 – 27 ก.ย.', [21, 22, 23, 24, 25, 26, 27]], ['28 ก.ย. – 4 ต.ค.', [28, 29, 30, 1, 2, 3, 4]], ['5 – 11 ต.ค.', [5, 6, 7, 8, 9, 10, 11]], ['12 – 18 ต.ค.', [12, 13, 14, 15, 16, 17, 18]], ['19 – 25 ต.ค.', [19, 20, 21, 22, 23, 24, 25]]];
   let days = '';
   for (const [n, ds] of weeks) days += `<div class="wk" style="width:${7 * DAY}px"><div class="wk-name">${n}</div><div class="wk-days">${ds.map((d, i) => `<div class="d${i >= 5 ? ' we' : ''}" style="width:${DAY}px">${d}</div>`).join('')}</div></div>`;
   const rows = [
-    { wbs: '1', name: 'รวบรวมความต้องการ', s: 0, e: 2, crit: true, pg: 100 },
+    { wbs: '1', name: 'รวบรวมความต้องการ', s: 0, e: 2, crit: true, pg: 100, who: [['ส', '#6a4fd8']] },
     { wbs: '2', name: 'ออกแบบ', sum: true, s: 3, e: 9, crit: true, pg: 33 },
-    { wbs: '2.1', name: 'ออกแบบระบบ', s: 3, e: 9, crit: true, pg: 40, l1: true },
-    { wbs: '2.2', name: 'ออกแบบ UI', s: 3, e: 8, crit: false, pg: 25, l1: true },
+    { wbs: '2.1', name: 'ออกแบบระบบ', s: 3, e: 9, crit: true, pg: 40, l1: true, who: [['ด', '#e0457b', true]] },
+    { wbs: '2.2', name: 'ออกแบบ UI', s: 3, e: 8, crit: false, pg: 25, l1: true, who: [['ด', '#e0457b', true]] },
     { wbs: '3', name: 'พัฒนา', sum: true, s: 9, e: 17, crit: true, pg: 0 },
-    { wbs: '3.1', name: 'พัฒนา Backend', s: 10, e: 17, crit: true, pg: 0, l1: true },
-    { wbs: '3.2', name: 'พัฒนา Frontend', s: 9, e: 15, crit: false, pg: 0, l1: true },
-    { wbs: '4', name: 'ทดสอบระบบ', s: 18, e: 22, crit: true, pg: 0 },
+    { wbs: '3.1', name: 'พัฒนา Backend', s: 10, e: 17, crit: true, pg: 0, l1: true, who: [['ว', '#1f9e89'], ['ส', '#6a4fd8'], ['S', '#8a83a8'], ['+1', '']] },
+    { wbs: '3.2', name: 'พัฒนา Frontend', s: 9, e: 15, crit: false, pg: 0, l1: true, who: [['ด', '#e0457b', true]] },
+    { wbs: '4', name: 'ทดสอบระบบ', s: 18, e: 22, crit: true, pg: 0, who: [['ว', '#1f9e89']] },
     { wbs: '5', name: 'เสร็จตามแผน', ms: true, s: 22 },
     { wbs: '', name: 'สำรองเวลาโครงการ', buf: true },
   ];
+  if (releases) {
+    rows.splice(4, 0, { wbs: '2.3', name: 'ส่งมอบเฟส 1', ms: true, s: 9, l1: true, rel: 1 });
+    rows[rows.length - 2] = { wbs: '5', name: 'ส่งมอบเฟส 2', ms: true, s: 22, rel: 2 };
+    rows[rows.length - 1] = { wbs: '', name: 'สำรองเวลา · 2 จุด', buf: true };
+    rows.find((r) => r.wbs === '2.2').e = 8;
+  }
   let tbl = `<div class="tbl"><div class="tr head"><span class="wbs">WBS</span><span class="nm">ชื่องาน</span></div>`;
   for (const r of rows) tbl += `<div class="tr${r.sum ? ' sum' : ''}${r.l1 ? ' l1' : ''}"><span class="wbs">${r.wbs}</span><span class="nm">${r.sum ? `<span class="car">${I.caretDown(14)}</span>` : ''}<span class="dot${r.crit ? ' crit' : ''}${r.ms ? ' ms' : ''}${r.buf ? ' buf' : ''}"></span>${r.name}</span></div>`;
   tbl += '</div>';
@@ -221,7 +231,13 @@ function ganttBuffer() {
       body += `<div class="sumbar${r.crit ? ' crit' : ''}" style="left:${l}px;top:${y + 12}px;width:${w}px"></div><div class="sumcap${r.crit ? ' crit' : ''}" style="left:${l}px;top:${y + 20}px"></div><div class="sumcap${r.crit ? ' crit' : ''}" style="left:${l + w - 12}px;top:${y + 20}px"></div>`;
     } else if (r.ms) {
       const cx = (r.s + 1) * DAY;
-      body += `<div class="ms" style="left:${cx - 8}px;top:${y + 12}px"></div><div class="lbl" style="left:${cx + 14}px;top:${y + 13}px">6 ต.ค.</div>`;
+      body += `<div class="ms" style="left:${cx - 8}px;top:${y + 12}px"></div><div class="lbl" style="left:${cx + 14}px;top:${y + 13}px">${r.rel === 1 ? '23 ก.ย.' : '6 ต.ค.'}</div>`;
+    } else if (r.buf && releases) {
+      // phase 1: design chain 9 days -> 5 days buffer after 23 Sep; phase 2: its own chain 13 days -> 7 days after 6 Oct
+      const b1 = 10 * DAY, w1 = 5 * DAY;
+      body += `<div class="buf" style="left:${b1}px;top:${y + 8}px;width:${w1 - 14}px"><div class="used" style="width:0"></div><span>เฟส 1 · เผื่อ 5 วัน</span></div><div class="ms deliver" style="left:${b1 + w1 - 8}px;top:${y + 12}px"></div>`;
+      const b2 = 23 * DAY, w2 = 9 * DAY;
+      body += `<div class="buf" style="left:${b2}px;top:${y + 8}px;width:${w2 - 14}px"><div class="used" style="width:22%"></div><span>เฟส 2 · เผื่อ 7 วัน · ใช้ไป 22%</span></div><div class="ms deliver" style="left:${b2 + w2 - 8}px;top:${y + 12}px"></div>`;
     } else if (r.buf) {
       const l = 23 * DAY, w = 13 * DAY, end = l + w;
       body += `<div class="buf" style="left:${l}px;top:${y + 8}px;width:${w - 14}px"><div class="used" style="width:22%"></div><span>เผื่อ 9 วัน · ใช้ไป 2 วัน</span></div>`;
@@ -231,6 +247,8 @@ function ganttBuffer() {
     } else {
       const l = r.s * DAY, w = (r.e - r.s + 1) * DAY;
       body += `<div class="bar${r.crit ? ' crit' : ''}" style="left:${l}px;top:${y + 8}px;width:${w}px"><div class="pg" style="width:${r.pg}%"></div>${w >= 120 ? `<span>${r.name}</span>` : ''}</div>`;
+      if (r.wbs === '3.2') body += `<div class="feed short" style="left:${l + w + 2}px;top:${y + 14}px;width:${3 * DAY - 4}px"></div>`;
+      if (r.who) body += `<div class="asg" style="left:${l + w + 20 + (r.wbs === '3.2' ? 3 * DAY : 0)}px;top:${y + 9}px">${r.who.map(([t, c, over]) => `<span class="asg-av${over ? ' over' : ''}${c ? '' : ' more'}"${c ? ` style="background:${c}"` : ''}>${t}</span>`).join('')}</div>`;
     }
   });
   return `<div class="gantt">${tbl}<div class="tl"><div class="days">${days}</div><div class="rows" style="height:${rows.length * ROW}px">${body}</div></div></div>`;
@@ -240,10 +258,18 @@ const ganttDesktop = wrap(`<div style="width:1280px;height:720px;padding:16px;di
   ${hbar('gantt')}
   <div class="tool"><div class="btn sm">${I.list(16)}<span>รายการงาน</span></div><div class="seg white"><span>วัน</span><span class="on">สัปดาห์</span><span>เดือน</span></div><div class="spacer"></div><span class="chip">Critical 4 งาน</span><span class="chip green">เผื่อยังปลอดภัย · ใช้ 22% / งาน 35%</span><span class="chip soft">เสร็จตามแผน 6 ต.ค. · สัญญาส่ง 19 ต.ค.</span><div class="btn primary" style="height:36px">${I.plus(14)}<span>เพิ่มงาน</span></div></div>
   ${ganttBuffer()}
-  <div class="foot"><span class="tag">Gantt</span><strong>กลุ่มงาน (WBS) + แถบสำรองเวลา</strong><span>แถบสีเข้มมีขีดปลาย = กลุ่มงาน · แถบลายทแยงขอบชมพู = เวลาเผื่อ ส่วนทึบคือที่ใช้ไปแล้ว · เพชรดำ = วันสัญญาส่ง</span></div>
+  <div class="foot"><span class="tag">Gantt</span><strong>กลุ่มงาน (WBS) + แถบสำรองเวลา</strong><span>แถบสีเข้มมีขีดปลาย = กลุ่มงาน · แถบลายทแยงขอบชมพู = เวลาเผื่อ ส่วนทึบคือที่ใช้ไปแล้ว · เพชรดำ = วันสัญญาส่ง · อวาตาร์หลังแถบ = ผู้ทำ (วงแดง = เกินกำลัง, +N = คนที่เหลือ) · แถบจุดไข่ปลาหลัง Frontend = feeding buffer ที่สายรองควรเว้นก่อนบรรจบสายหลัก (ชมพู = float ไม่พอ)</span></div>
 </div>`);
 
 writeFileSync('SettingsDesktop.dc.html', settingsDesktop);
 writeFileSync('SettingsMobile.dc.html', settingsMobile);
 writeFileSync('GanttBuffer.dc.html', ganttDesktop);
-console.log('built SettingsDesktop, SettingsMobile, GanttBuffer');
+
+const ganttReleases = wrap(`<div style="width:1280px;height:720px;padding:16px;display:flex;flex-direction:column;gap:12px;background:#f2f0fa;overflow:hidden">
+  ${hbar('gantt')}
+  <div class="tool"><div class="btn sm">${I.list(16)}<span>รายการงาน</span></div><div class="seg white"><span>วัน</span><span class="on">สัปดาห์</span><span>เดือน</span></div><div class="spacer"></div><span class="chip">Critical 4 งาน</span><span class="chip soft">เฟส 1 · ส่ง 30 ก.ย. · เผื่อ 5 วัน</span><span class="chip green">เฟส 2 · ส่ง 19 ต.ค. · เผื่อ 7 วัน · ใช้ไป 22%</span><div class="btn primary" style="height:36px">${I.plus(14)}<span>เพิ่มงาน</span></div></div>
+  ${ganttBuffer('releases')}
+  <div class="foot"><span class="tag">Gantt</span><strong>จุดส่งมอบหลายจุด (BUF-8)</strong><span>milestone ที่ตั้งเป็น "จุดส่งมอบ" มีเวลาเผื่อของตัวเองต่อท้าย · งานที่ป้อนเข้า milestone ไหนก่อนก็อยู่ในก้อนนั้น · toolbar มีชิปสัญญาส่งต่อจุด · เพชรดำ = สัญญาส่ง</span></div>
+</div>`);
+writeFileSync('GanttReleases.dc.html', ganttReleases);
+console.log('built SettingsDesktop, SettingsMobile, GanttBuffer, GanttReleases');

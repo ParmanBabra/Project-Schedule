@@ -296,6 +296,7 @@ const canvas = {
   pages: [{ id: 'settings', name: 'ตั้งค่า + Buffer + WBS' }, { id: 'mobile', name: 'มือถือ (Layout 2)' }, { id: 'layouts', name: 'Layout (แบบ D)' }, { id: 'directions', name: 'แนวทางที่เคยเสนอ' }],
   artboards: [
     { file: 'GanttBuffer.dc.html', title: 'Desktop · Gantt กลุ่มงาน + สำรองเวลา', x: 0, y: 0, w: 1280, h: 720, page: 'settings' },
+    { file: 'GanttReleases.dc.html', title: 'Desktop · Gantt จุดส่งมอบหลายจุด (เผื่อต่อ release)', x: 1380, y: 0, w: 1280, h: 720, page: 'settings' },
     { file: 'SettingsDesktop.dc.html', title: 'Desktop · ตั้งค่าโปรเจกต์', x: 0, y: 860, w: 1280, h: 1400, page: 'settings' },
     { file: 'SettingsMobile.dc.html', title: 'มือถือ · ตั้งค่า สำรองเวลา', x: 1380, y: 860, w: 390, h: 844, page: 'settings' },
     { file: 'MobileGantt.dc.html', title: 'มือถือ · Gantt', x: 0, y: 0, w: 390, h: 844, page: 'mobile' },

@@ -1,14 +1,6 @@
 {
   "pages": [
     {
-      "id": "epics",
-      "name": "Epics"
-    },
-    {
-      "id": "tasks",
-      "name": "งานย่อย + งานต่อเนื่อง"
-    },
-    {
       "id": "settings",
       "name": "ตั้งค่า + Buffer + WBS"
     },
@@ -27,135 +19,18 @@
   ],
   "artboards": [
     {
-      "file": "EpicsPage.dc.html",
-      "title": "Desktop · หน้า Epics",
+      "file": "GanttBuffer.dc.html",
+      "title": "Desktop · Gantt กลุ่มงาน + สำรองเวลา",
       "x": 0,
       "y": 0,
       "w": 1280,
       "h": 720,
-      "page": "epics"
+      "page": "settings"
     },
     {
-      "file": "GanttEpic.dc.html",
-      "title": "Desktop · Gantt สี Epic + แผง Epic",
-      "x": 0,
-      "y": 860,
-      "w": 1280,
-      "h": 620,
-      "page": "epics"
-    },
-    {
-      "file": "CreateEpic.dc.html",
-      "title": "Desktop · สร้าง Epic",
+      "file": "GanttReleases.dc.html",
+      "title": "Desktop · Gantt จุดส่งมอบหลายจุด (เผื่อต่อ release)",
       "x": 1380,
-      "y": 0,
-      "w": 760,
-      "h": 960,
-      "page": "epics"
-    },
-    {
-      "file": "MobileEpics.dc.html",
-      "title": "มือถือ · Epics",
-      "x": 1380,
-      "y": 960,
-      "w": 390,
-      "h": 844,
-      "page": "epics"
-    },
-    {
-      "file": "TopicSelect.dc.html",
-      "title": "Desktop · เลือกงานที่มีอยู่ → รวมเป็นหัวข้อ",
-      "x": 1640,
-      "y": 2000,
-      "w": 900,
-      "h": 560,
-      "page": "tasks"
-    },
-    {
-      "file": "TopicPanel.dc.html",
-      "title": "Desktop · แผงงาน: ช่อง \"อยู่ในหัวข้อ\"",
-      "x": 1640,
-      "y": 2680,
-      "w": 720,
-      "h": 620,
-      "page": "tasks"
-    },
-    {
-      "file": "TopicEntry.dc.html",
-      "title": "Desktop · จุดเข้า: ปุ่มเพิ่มงานแบบแยก",
-      "x": 0,
-      "y": 2000,
-      "w": 560,
-      "h": 420,
-      "page": "tasks"
-    },
-    {
-      "file": "TopicDialog.dc.html",
-      "title": "Desktop · เพิ่มหัวข้อ (พิมพ์เอง)",
-      "x": 660,
-      "y": 2000,
-      "w": 880,
-      "h": 760,
-      "page": "tasks"
-    },
-    {
-      "file": "TopicPaste.dc.html",
-      "title": "Desktop · เพิ่มหัวข้อ (วางจาก Excel)",
-      "x": 660,
-      "y": 2900,
-      "w": 880,
-      "h": 900,
-      "page": "tasks"
-    },
-    {
-      "file": "MobileTopic.dc.html",
-      "title": "มือถือ · เพิ่มหัวข้อ",
-      "x": 0,
-      "y": 2560,
-      "w": 390,
-      "h": 844,
-      "page": "tasks"
-    },
-    {
-      "file": "TaskChecklist.dc.html",
-      "title": "Desktop · แผงงาน: งานย่อย (checklist)",
-      "x": 0,
-      "y": 0,
-      "w": 720,
-      "h": 840,
-      "page": "tasks"
-    },
-    {
-      "file": "ChainDialog.dc.html",
-      "title": "Desktop · สร้างงานต่อจากงานนี้",
-      "x": 820,
-      "y": 0,
-      "w": 760,
-      "h": 860,
-      "page": "tasks"
-    },
-    {
-      "file": "MobileChecklist.dc.html",
-      "title": "มือถือ · งานย่อยใน sheet",
-      "x": 0,
-      "y": 1000,
-      "w": 390,
-      "h": 844,
-      "page": "tasks"
-    },
-    {
-      "file": "MobileChain.dc.html",
-      "title": "มือถือ · สร้างงานต่อเนื่อง",
-      "x": 490,
-      "y": 1000,
-      "w": 390,
-      "h": 844,
-      "page": "tasks"
-    },
-    {
-      "file": "GanttBuffer.dc.html",
-      "title": "Desktop · Gantt กลุ่มงาน + สำรองเวลา",
-      "x": 0,
       "y": 0,
       "w": 1280,
       "h": 720,
@@ -325,6 +200,6 @@
   ],
   "launch": {
     "view": "canvas",
-    "page": "epics"
+    "page": "settings"
   }
 }

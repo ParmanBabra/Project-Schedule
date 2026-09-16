@@ -119,6 +119,7 @@ def import_project(
         buffer=src.buffer,
         rules=src.rules,
         baseline=src.baseline,
+        releases=src.releases,
     )
     out = validate_and_save(projects, project)
     result = ImportResult(project_id=pid, created_resources=created, matched_resources=matched)
@@ -128,7 +129,7 @@ def import_project(
 CSV_HEADER = [
     "WBS", "ชื่องาน", "ประเภท", "ระยะเวลา (วัน)", "เริ่ม", "สิ้นสุด",
     "เริ่มช้าสุด", "เสร็จช้าสุด", "Total float", "Free float", "Critical",
-    "ความคืบหน้า %", "สถานะ", "ผู้ทำ", "งานก่อนหน้า",
+    "ความคืบหน้า %", "สถานะ", "ผู้ทำ", "งานก่อนหน้า", "หมายเหตุ",
 ]  # fmt: skip
 
 
@@ -137,6 +138,7 @@ def export_csv(projects: ProjectRepository, resources: ResourceRepository, proje
     project = projects.get(project_id)
     schedule = compute_schedule(project)
     names = {t.id: t.name for t in project.tasks}
+    notes = {t.id: t.description for t in project.tasks}
     res_names = {r.id: r.name for r in resources.all()}
     who: dict[str, list[str]] = {}
     for a in project.assignments:
@@ -169,6 +171,7 @@ def export_csv(projects: ProjectRepository, resources: ResourceRepository, proje
                 s.health,
                 "; ".join(who.get(s.id, [])),
                 "; ".join(preds.get(s.id, [])),
+                notes.get(s.id, ""),
             ]  # fmt: skip
         )
     b = schedule.buffer
