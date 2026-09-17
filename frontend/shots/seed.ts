@@ -1,4 +1,5 @@
 import type { APIRequestContext } from '@playwright/test'
+import { createHash } from 'node:crypto'
 import { mkdirSync, rmSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -12,16 +13,17 @@ const LOCK_DIR = resolve(fileURLToPath(new URL('.', import.meta.url)), '../.auth
  */
 async function withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
   mkdirSync(LOCK_DIR, { recursive: true })
-  const dir = resolve(LOCK_DIR, encodeURIComponent(key))
+  // a short hash: Thai keys percent-encode to hundreds of characters and overflow MAX_PATH on Windows
+  const dir = resolve(LOCK_DIR, createHash('sha1').update(key).digest('hex').slice(0, 16))
   const started = Date.now()
   for (;;) {
     try {
       mkdirSync(dir)
       break
-    } catch {
-      if (Date.now() - started > 15_000) { // seeding takes ~2 s; anything longer is a leftover
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e // never spin on a broken path
+      if (Date.now() - started > 30_000) { // a big seed takes ~10 s; anything longer is a leftover
         rmSync(dir, { recursive: true, force: true }) // stale lock from a crashed run
-        continue
       }
       await new Promise((r) => setTimeout(r, 100))
     }
@@ -176,5 +178,20 @@ async function seedReleasesUnlocked(request: APIRequestContext, name: string): P
   const m2 = await milestone('ส่งมอบเฟส 2', 'ทดสอบระบบ')
   await request.post(`/api/projects/${pid}/releases`, { data: { name: 'เฟส 1 · ออกแบบ', milestoneTaskId: m1 } })
   await request.post(`/api/projects/${pid}/releases`, { data: { name: 'เฟส 2 · ส่งมอบระบบ', milestoneTaskId: m2 } })
+  return pid
+}
+
+/** The sample project plus 30 extra tasks: enough rows to overflow one screen (scroll checks). */
+export function seedLargeProject(request: APIRequestContext, name = 'ระบบจองห้องประชุม (โปรเจกต์ยาว)'): Promise<string> {
+  return withLock(`project:${name}`, () => seedLargeProjectUnlocked(request, name))
+}
+
+async function seedLargeProjectUnlocked(request: APIRequestContext, name: string): Promise<string> {
+  const pid = await seedSampleProjectUnlocked(request, name, { assignments: false })
+  const p = await (await request.get(`/api/projects/${pid}`)).json()
+  if (p.tasks.length >= 36) return pid
+  for (let i = 0; i < 30; i++) {
+    await request.post(`/api/projects/${pid}/tasks`, { data: { name: `งานเพิ่มเติม ${i + 1}`, duration: 1 + (i % 5) } })
+  }
   return pid
 }

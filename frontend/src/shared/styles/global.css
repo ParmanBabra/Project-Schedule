@@ -40,3 +40,30 @@ a:hover {
   outline-offset: 2px;
   border-radius: var(--r-input);
 }
+
+/* Scrollbars: thin, rounded, quiet – the same in the Gantt, panels, drawers and the page.
+   Native scrollbars stay usable (drag, click on track); only their look is toned down. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--r-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-4);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

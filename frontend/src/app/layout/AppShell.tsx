@@ -1,5 +1,5 @@
 import { Calendar, ChevronDown, FolderKanban, GanttChartSquare, Layers, LogOut, MoreHorizontal, Settings, Users } from 'lucide-react'
-import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useLogout, useMe } from '@/features/auth/api'
 import { useProject, useProjects } from '@/features/projects/api'
 import { IconButton, Menu } from '@/shared/ui'
@@ -11,16 +11,22 @@ import styles from './AppShell.module.css'
  * and tabs. Pages render below with a 16px gutter. Without a project only the
  * global tabs (โปรเจกต์ / ทรัพยากร) are shown.
  */
+/** Pages that are a scrolling canvas (Gantt, calendar) fill the viewport and scroll inside; document-like pages scroll the window. */
+export function isFillRoute(pathname: string): boolean {
+  return /\/(gantt|calendar)\/?$/.test(pathname)
+}
+
 export function AppShell() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
+  const fill = isFillRoute(useLocation().pathname)
   const me = useMe()
   const logout = useLogout()
   const canLogout = Boolean(me.data && !me.data.authDisabled)
   const doLogout = () => logout.mutate(undefined, { onSettled: () => navigate('/login', { replace: true }) })
   const logoutItem = canLogout ? [{ label: 'ออกจากระบบ', icon: <LogOut size={16} />, onSelect: doLogout }] : []
   return (
-    <div className={styles.shell}>
+    <div className={[styles.shell, fill && styles.shellFill].filter(Boolean).join(' ')} data-fill={fill ? 'true' : undefined}>
       <header className={styles.hbar}>
         <NavLink to="/" className={styles.brand} aria-label="แผนงาน หน้าแรก">
           <span className={styles.mark} aria-hidden="true" />

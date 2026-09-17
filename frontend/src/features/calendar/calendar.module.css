@@ -13,7 +13,7 @@
 .dow { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-bottom: 1px solid var(--border); }
 .dow span { padding: 8px 10px; font-size: var(--fs-label); color: var(--text-3); font-weight: var(--fw-medium); }
 .dow span:nth-child(n + 6) { color: var(--text-4); }
-.weeks { flex: 1; display: grid; grid-template-rows: repeat(6, minmax(112px, 1fr)); overflow: auto; }
+.weeks { flex: 1; display: grid; grid-template-rows: repeat(6, minmax(88px, 1fr)); overflow: auto; overscroll-behavior: contain; } /* 88px: a 6-week month still fits an 800px-tall window; rows grow with the viewport */
 .week { position: relative; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-bottom: 1px solid var(--border-soft); }
 .cell { position: relative; border-right: 1px solid var(--border-soft); padding: 6px 8px; min-height: 112px; }
 .cell:last-child { border-right: 0; }
@@ -56,7 +56,7 @@
 .segDot { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; margin-right: 6px; background: rgba(255, 255, 255, 0.7); }
 
 /* ---- week by resource ---- */
-.weekView { flex: 1; overflow: auto; }
+.weekView { flex: 1; overflow: auto; overscroll-behavior: contain; }
 .wTable { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .wTable th { position: sticky; top: 0; z-index: 2; background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px; font-size: var(--fs-label); font-weight: var(--fw-medium); color: var(--text-3); text-align: left; }
 .wTable th:first-child { width: 200px; }

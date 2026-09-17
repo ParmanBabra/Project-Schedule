@@ -11,7 +11,7 @@
 
 .card { flex: 1; min-height: 420px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 
-.chart { flex: 1; overflow: auto; position: relative; }
+.chart { flex: 1; overflow: auto; position: relative; overscroll-behavior: contain; }
 .inner { position: relative; min-width: 100%; }
 
 .headerRow { display: flex; position: sticky; top: 0; z-index: 5; background: var(--surface); border-bottom: 1px solid var(--border); height: 56px; }

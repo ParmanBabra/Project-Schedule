@@ -136,6 +136,7 @@
 | `ProgressBar` | primary, task | สูง 8 – 10 โค้ง pill |
 | `Card` | default, kpi (crit / warn) | ดู tokens |
 | `Tooltip` | — | พื้น ink ตัวขาว โค้ง 8 |
+| Scrollbar | global.css | บาง 10px รางโปร่ง ก้อนเลื่อน `--border` มุม pill (hover `--text-4`) ใช้ทุกจุดที่เลื่อนได้: Gantt, แผงงาน, drawer, หน้าเว็บ ไม่ซ่อน scrollbar |
 | `Toast` | success, error, warn | มุมล่างกลาง (มือถือ) / ล่างขวา (desktop) |
 | `Dialog` | confirm | การ์ด 420px กลางจอ; มือถือกลายเป็น bottom sheet |
 | `BottomSheet` | half, full | มือถือเท่านั้น โค้งบน 24 มีที่จับลาก |

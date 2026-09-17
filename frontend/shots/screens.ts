@@ -1,5 +1,5 @@
 import type { APIRequestContext, Page } from '@playwright/test'
-import { seedEpics, seedReleases, seedResources, seedSampleProject } from './seed'
+import { seedEpics, seedLargeProject, seedReleases, seedResources, seedSampleProject } from './seed'
 
 /**
  * Registry of every screen/state that design review and visual regression cover.
@@ -115,6 +115,18 @@ export const screens: Screen[] = [
       await page.getByRole('radio', { name: 'สัปดาห์' }).click()
       await page.getByTestId(/^task-row-/).filter({ hasText: 'ส่งมอบเฟส 1' }).getByRole('button', { name: /ส่งมอบเฟส 1/ }).click()
       await page.getByTestId('release-section').waitFor()
+    },
+  },
+  {
+    name: 'gantt-large',
+    path: async (r) => `/p/${await seedLargeProject(r)}/gantt`,
+    mockup: { desktop: 'Layout2' },
+    setup: async (page) => {
+      await page.locator('[data-testid^="bar-"]').filter({ hasText: 'พัฒนา Backend' }).click()
+      await page.getByTestId('task-panel').waitFor()
+      // scroll the chart half a screen: the header and the panel must stay put
+      await page.getByTestId('gantt-chart').evaluate((el) => { el.scrollTop = 300 })
+      await page.waitForTimeout(200)
     },
   },
   { name: 'gantt-task-list', path: gantt, setup: async (page) => { await page.getByRole('button', { name: 'รายการงาน' }).click() } },
