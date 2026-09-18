@@ -97,3 +97,30 @@ describe('GanttChart drag interactions', () => {
     expect(screen.getByTestId('bar-t2').className).not.toMatch(/previewBar/)
   })
 })
+
+describe('GanttChart milestone drag', () => {
+  beforeEach(() => {
+    Element.prototype.getBoundingClientRect = vi.fn(() => ({ top: 0, left: 0, right: 1000, bottom: 1000, width: 1000, height: 1000, x: 0, y: 0, toJSON: () => ({}) })) as never
+    Element.prototype.scrollTo = vi.fn()
+  })
+
+  it('the ghost diamond follows the pointer and the committed date lands where it was dropped', () => {
+    const project = sampleProject()
+    const t6 = project.tasks.find((t) => t.id === 't6')!
+    t6.isMilestone = true
+    t6.duration = 0
+    project.schedule.tasks.t6 = { ...project.schedule.tasks.t6, isMilestone: true, duration: 0, start: '2026-10-06', end: '2026-10-06' }
+    const p = renderChart({ project })
+    const ms = screen.getByTestId('bar-t6')
+    const before = parseFloat(ms.style.left)
+    fireEvent.pointerDown(ms, { button: 0, clientX: 500, clientY: 240, pointerType: 'mouse', pointerId: 1 })
+    const area = screen.getByTestId('gantt-chart').querySelector('[class*="timeArea"]')!
+    fireEvent.pointerMove(area, { clientX: 572, clientY: 240 }) // +72px = 2 days
+    const ghost = screen.getByTestId('drag-ghost')
+    expect(ghost).toHaveTextContent('ถึง 8 ต.ค.')
+    expect(parseFloat(ghost.style.left)).toBe(before + 72) // exactly under the pointer, not a day off
+    expect(p.onDragPreview).toHaveBeenCalledWith({ taskId: 't6', start: '2026-10-09' })
+    fireEvent.pointerUp(area, { clientX: 572, clientY: 240 })
+    expect(p.onCommitDrag).toHaveBeenCalledWith({ taskId: 't6', start: '2026-10-09' })
+  })
+})

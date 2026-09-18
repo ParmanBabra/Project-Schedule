@@ -129,7 +129,20 @@ export const screens: Screen[] = [
       await page.waitForTimeout(200)
     },
   },
-  { name: 'gantt-task-list', path: gantt, setup: async (page) => { await page.getByRole('button', { name: 'รายการงาน' }).click() } },
+  {
+    name: 'gantt-milestone-dragging',
+    path: gantt,
+    viewports: ['desktop'],
+    setup: async (page) => {
+      const ms = page.getByRole('button', { name: 'milestone ส่งมอบ' })
+      const box = (await ms.boundingBox())!
+      await page.mouse.move(box.x + 8, box.y + 8)
+      await page.mouse.down()
+      await page.mouse.move(box.x + 8 + 2 * 36, box.y + 8, { steps: 6 })
+      await page.waitForTimeout(400)
+    },
+  },
+  { name: 'gantt-task-list', path: gantt, setup: async (page) => { await page.getByTestId('chip-overallocation').waitFor(); /* workload loads late and shifts the toolbar */ await page.getByRole('button', { name: 'รายการงาน' }).click() } },
   {
     name: 'gantt-namecol-wide',
     path: gantt,
@@ -183,6 +196,11 @@ export const screens: Screen[] = [
 
 /** Mockup artboards rendered for side-by-side reference (design/*.dc.html). */
 export const mockups = ['Layout2', 'Layout3', 'GanttBuffer', 'SettingsDesktop', 'SettingsMobile', 'MobileGantt', 'MobileTaskSheet', 'MobileCalendar', 'TaskChecklist', 'ChainDialog', 'MobileChecklist', 'MobileChain', 'TopicEntry', 'TopicDialog', 'TopicPaste', 'MobileTopic', 'TopicSelect', 'TopicPanel', 'EpicsPage', 'GanttEpic', 'CreateEpic', 'MobileEpics', 'GanttReleases']
+
+/** Freeze the browser clock on the same day as the servers (playwright.config FIXED_TODAY). */
+export async function pinClock(page: Page): Promise<void> {
+  await page.clock.setFixedTime(new Date('2026-09-16T09:00:00+07:00'))
+}
 
 export async function resolvePath(screen: Screen, request: APIRequestContext): Promise<string> {
   return typeof screen.path === 'string' ? screen.path : screen.path(request)

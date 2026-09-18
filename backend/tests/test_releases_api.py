@@ -27,12 +27,15 @@ def test_create_update_delete_release_and_schedule_output(client: TestClient):
         {"id": "rel_01", "name": "ปีนี้", "milestoneTaskId": ids["m1"], "days": None}
     ]
     rel = body["schedule"]["releases"]
-    assert len(rel) == 1 and rel[0]["id"] == "rel_01"
-    # c and m2 feed no release yet -> they belong to the only one, whose chain then runs a-b-c
-    assert set(rel[0]["taskIds"]) == set(ids.values())
-    assert rel[0]["chainDays"] == 12 and rel[0]["days"] == 6
-    assert rel[0]["chainTaskIds"] == [ids["a"], ids["b"], ids["c"]]
-    assert rel[0]["plannedEnd"] == "2026-09-29" and rel[0]["end"] == "2026-10-07"
+    # the buffer sticks to the milestone: only a, b and m1 feed it
+    assert [r["id"] for r in rel] == ["rel_01", "tail"]
+    assert set(rel[0]["taskIds"]) == {ids["a"], ids["b"], ids["m1"]}
+    assert rel[0]["chainDays"] == 8 and rel[0]["days"] == 4
+    assert rel[0]["chainTaskIds"] == [ids["a"], ids["b"]]
+    assert rel[0]["plannedEnd"] == "2026-09-23" and rel[0]["end"] == "2026-09-29"
+    # c and m2 feed no delivery point yet -> trailing buffer of their own
+    assert set(rel[1]["taskIds"]) == {ids["c"], ids["m2"]} and rel[1]["milestoneTaskId"] == ""
+    assert rel[1]["chainDays"] == 4 and rel[1]["days"] == 2 and rel[1]["plannedEnd"] == "2026-09-29"
 
     res = client.post(
         f"/api/projects/{pid}/releases",

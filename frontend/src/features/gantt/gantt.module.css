@@ -306,6 +306,9 @@
   pointer-events: none;
   z-index: 4;
 }
+/* milestone drag: a dashed diamond under the pointer with the landing date beside it */
+.ghostMilestone { border: 0; background: transparent; padding: 0; gap: 10px; overflow: visible; }
+.ghostDiamond { width: 16px; height: 16px; flex-shrink: 0; border: 2px dashed var(--primary); border-radius: 4px; background: rgba(106, 79, 216, 0.12); transform: rotate(45deg); }
 .previewBar { outline: 2px dashed var(--primary); outline-offset: 2px; }
 .arrows .arrowHit { stroke: transparent; stroke-width: 12px; pointer-events: stroke; cursor: pointer; }
 .arrowHit:hover + path, .arrowHit:hover { stroke: rgba(106, 79, 216, 0.15); }

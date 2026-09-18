@@ -402,3 +402,17 @@ def test_padding_warning_when_most_started_tasks_run_far_ahead():
     for t, prog in zip(p.tasks, [30, 35, 25, 20], strict=True):
         t.progress = prog
     assert compute_schedule(p, today=_date(2026, 9, 16)).buffer.padding_warning is False
+
+
+def test_app_today_env_pins_the_clock(monkeypatch):
+    from app.features.scheduling.engine import default_today
+
+    monkeypatch.delenv("APP_TODAY", raising=False)
+    assert default_today() == date.today()
+    monkeypatch.setenv("APP_TODAY", "2026-09-16")
+    assert default_today() == D(2026, 9, 16)
+    # health is judged against the pinned day: UI (17–22 Sep, 25%) is not late on the 16th
+    p = sample_project()
+    assert compute_schedule(p).tasks["t3"].health == "not_started"
+    monkeypatch.setenv("APP_TODAY", "2026-09-22")
+    assert compute_schedule(p).tasks["t3"].health == "late"

@@ -83,3 +83,21 @@ test('ลากขอบปรับระยะเวลา, ลากเชื
   await pop.getByRole('button', { name: 'ลบความสัมพันธ์' }).click()
   await expect(page.locator('[data-testid^="dep-hit-"]')).toHaveCount(before)
 })
+
+test('ลาก milestone: เพชรลงตรงวันที่ปล่อยเมาส์ ไม่เหลื่อมหนึ่งวัน', async ({ page, request }, testInfo) => {
+  const pid = await seedSampleProject(request, `E2E ลาก milestone ${testInfo.project.name} ${Date.now()}`)
+  await page.goto(`/p/${pid}/gantt`)
+  const ms = page.getByRole('button', { name: 'milestone ส่งมอบ' })
+  await expect(ms).toBeVisible()
+  const id = (await ms.getAttribute('data-testid'))!.replace('bar-', '')
+  const before = (await ms.boundingBox())!
+  // shows 6 Oct; drag 2 days right (72px at day zoom) -> must show 8 Oct, exactly 72px further
+  await dragBy(page, `[data-testid="bar-${id}"]`, 72)
+  await expect(page.getByTestId('drag-ghost')).toContainText('ถึง 8 ต.ค.')
+  await page.mouse.up()
+  await expect(page.getByText(/ย้าย "ส่งมอบ" ไปวันที่ 8 ต.ค./)).toBeVisible()
+  const after = (await page.getByRole('button', { name: 'milestone ส่งมอบ' }).boundingBox())!
+  expect(Math.round(after.x - before.x)).toBe(72)
+  const task = (await (await request.get(`/api/projects/${pid}`)).json()).tasks.find((t: { id: string }) => t.id === id)
+  expect(task.constraint).toEqual({ type: 'SNET', date: '2026-10-09' })
+})

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { resolvePath, screens, settle } from '../shots/screens'
+import { pinClock, resolvePath, screens, settle } from '../shots/screens'
 
 /**
  * Visual regression: every registered screen must match its approved baseline.
@@ -12,6 +12,7 @@ for (const screen of screens) {
     test.skip(screen.viewports !== undefined && !screen.viewports.includes(viewport), `${screen.name} not defined for ${viewport}`)
     // anonymous screens (login) get a fresh context without the shared session cookie
     const page = screen.noAuth ? await (await browser.newContext({ ...testInfo.project.use, storageState: undefined })).newPage() : authedPage
+    await pinClock(page)
     await page.goto(await resolvePath(screen, request))
     await settle(page)
     if (screen.setup) {

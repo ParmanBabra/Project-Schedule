@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent a
 import type { ProjectOut, ReleaseResult, Resource, Schedule, TaskSchedule } from '@/features/projects/types'
 import { Avatar } from '@/shared/ui'
 import { formatThai, todayISO } from '@/shared/lib/date'
-import { DRAG_THRESHOLD_PX, moveTarget, resizeTarget, snapDays, type DragMode, type DragState } from './lib/drag'
+import { DRAG_THRESHOLD_PX, milestoneTarget, moveTarget, resizeTarget, snapDays, type DragMode, type DragState } from './lib/drag'
 import { NAME_COL_MAX, NAME_COL_MIN, NAME_COL_STEP, clampNameColWidth, defaultNameColWidth, readNameColWidth, writeNameColWidth } from './lib/nameCol'
 import { buildOutline, epicColors, rowIndexMap } from './lib/outline'
 import {
@@ -222,7 +222,7 @@ export function GanttChart({
     const s = project.schedule.tasks[d.taskId]
     if (!s) return null
     const days = snapDays(d.dx, axis.pxPerDay)
-    if (d.mode === 'move') return { taskId: d.taskId, start: moveTarget(s, days, cal) }
+    if (d.mode === 'move') return { taskId: d.taskId, start: s.isMilestone ? milestoneTarget(s, days, cal).start : moveTarget(s, days, cal) }
     if (d.mode === 'resize') return { taskId: d.taskId, duration: resizeTarget(s, days, cal) }
     return null
   }
@@ -295,9 +295,13 @@ export function GanttChart({
     const g = barGeometry(axis, s)
     const days = snapDays(drag.dx, axis.pxPerDay)
     const patch = currentPatch(drag)
-    if (drag.mode === 'move') return { x: g.x + days * axis.pxPerDay, width: g.width, label: patch?.start ? `เริ่ม ${formatThai(patch.start)}` : '' }
+    if (drag.mode === 'move' && s.isMilestone) {
+      // the diamond follows the pointer day by day; the label says where it will actually land
+      return { x: g.x + days * axis.pxPerDay, width: 16, milestone: true, label: `ถึง ${formatThai(milestoneTarget(s, days, cal).shown)}` }
+    }
+    if (drag.mode === 'move') return { x: g.x + days * axis.pxPerDay, width: g.width, milestone: false, label: patch?.start ? `เริ่ม ${formatThai(patch.start)}` : '' }
     const width = Math.max(axis.pxPerDay, g.width + days * axis.pxPerDay)
-    return { x: g.x, width, label: patch?.duration ? `${patch.duration} วัน` : '' }
+    return { x: g.x, width, milestone: false, label: patch?.duration ? `${patch.duration} วัน` : '' }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drag, geometries, axis])
 
@@ -521,9 +525,12 @@ export function GanttChart({
                       onClick={() => !drag?.active && onSelect(r.task.id)}
                       onPointerDown={(e) => beginDrag(e, r.task.id, 'move')}
                     />
-                    <span className={styles.milestoneLabel} style={{ left: g.endX + 6, top: r.index * ROW_HEIGHT + 13 }}>
-                      {formatThai(s.end)}
-                    </span>
+                    {/* while it is being dragged the ghost carries the date; two labels would overlap */}
+                    {!(drag?.active && drag.taskId === r.task.id) && (
+                      <span className={styles.milestoneLabel} style={{ left: g.endX + 6, top: r.index * ROW_HEIGHT + 13 }}>
+                        {formatThai(s.end)}
+                      </span>
+                    )}
                   </span>
                 )
               }
@@ -596,7 +603,8 @@ export function GanttChart({
             })}
 
             {ghost && drag && (
-              <div className={styles.ghost} style={{ left: ghost.x, width: ghost.width, top: barTop(rowIndex.get(drag.taskId) ?? 0) }} data-testid="drag-ghost">
+              <div className={[styles.ghost, ghost.milestone && styles.ghostMilestone].filter(Boolean).join(' ')} style={{ left: ghost.x, width: ghost.milestone ? undefined : ghost.width, top: barTop(rowIndex.get(drag.taskId) ?? 0) }} data-testid="drag-ghost">
+                {ghost.milestone && <i className={styles.ghostDiamond} aria-hidden="true" />}
                 <span>{ghost.label}</span>
               </div>
             )}

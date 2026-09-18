@@ -16,6 +16,7 @@ Conventions
 from __future__ import annotations
 
 import math
+import os
 from collections import defaultdict, deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -232,7 +233,7 @@ def _find_cycle(nodes: dict[str, _Node], edges: list[_Edge]) -> list[str]:
 
 
 def compute_schedule(project: Project, today: date | None = None) -> Schedule:
-    today = today or date.today()
+    today = today or default_today()
     children, by_id = build_tree(project.tasks)
     if not project.working_days:
         raise ValidationFailed("project has no working days")
@@ -303,7 +304,7 @@ def compute_schedule(project: Project, today: date | None = None) -> Schedule:
 
     gate: dict[str, int] = {}
     forward(gate)
-    releases_valid, members, feeders = release_membership(project, nodes, outgoing)
+    releases_valid, members, feeders, orphans = release_membership(project, nodes, outgoing)
     if project.rules.release_successors == "after_buffer" and releases_valid:
         # size every release buffer from this first pass (its own chain never depends on the
         # gate), then push whatever hangs off a release milestone past that buffer and go again
@@ -322,8 +323,7 @@ def compute_schedule(project: Project, today: date | None = None) -> Schedule:
     for r in releases_valid:
         ms_ef = nodes[r.milestone_task_id].ef
         for nid in members[r.id]:
-            if nid in feeders[r.id]:
-                deadline[nid] = ms_ef
+            deadline[nid] = ms_ef
 
     # --------------------------------------------------------- backward pass
     finish_bound: dict[str, int] = {}
@@ -553,7 +553,7 @@ def compute_schedule(project: Project, today: date | None = None) -> Schedule:
         baseline_planned_end=project.baseline.planned_end if project.baseline else None,
     )
     releases = compute_releases(
-        project, nodes, cal, out, order, incoming, releases_valid, members, feeders, rolled_progress
+        project, nodes, cal, out, order, incoming, releases_valid, members, orphans, rolled_progress
     )
     feeding = compute_feeding_buffers(project, nodes, cal, out, order, incoming)
     return Schedule(
@@ -711,16 +711,21 @@ def compute_buffer(
 
 # ------------------------------------------------------------------ releases
 
+TAIL_RELEASE_ID = "tail"
+TAIL_RELEASE_NAME = "งานนอกจุดส่งมอบ"
+
 
 def release_membership(
     project: Project, nodes: dict[str, _Node], outgoing: dict[str, list[_Edge]]
-) -> tuple[list[Release], dict[str, list[str]], dict[str, set[str]]]:
-    """Releases ordered by milestone date, the leaf tasks of each one, and who feeds each milestone.
+) -> tuple[list[Release], dict[str, list[str]], dict[str, set[str]], list[str]]:
+    """Releases ordered by milestone date, the leaf tasks of each one, who feeds each milestone,
+    and the orphans.
 
     A leaf belongs to the earliest release whose milestone it can reach through dependencies
-    (the milestone itself included). Leaves that reach no release milestone fall into the last
-    release, so every task is covered by exactly one buffer. Releases whose milestone no longer
-    exists (or is a group) are skipped.
+    (the milestone itself included), so a release buffer always sits right after its milestone
+    and covers exactly the work that leads to it. Leaves that reach no release milestone are
+    orphans: they get their own trailing buffer ("งานนอกจุดส่งมอบ"). Releases whose milestone
+    no longer exists (or is a group) are skipped.
     """
     valid = [
         r
@@ -728,7 +733,7 @@ def release_membership(
         if r.milestone_task_id in nodes and not nodes[r.milestone_task_id].is_summary
     ]
     if not valid:
-        return [], {}, {}
+        return [], {}, {}, []
     valid.sort(key=lambda r: (nodes[r.milestone_task_id].ef, nodes[r.milestone_task_id].es, r.id))
     # reachability: every leaf that can reach each milestone (reverse BFS over real edges)
     incoming: dict[str, list[str]] = defaultdict(list)
@@ -748,12 +753,16 @@ def release_membership(
                     stack.append(p)
         feeders[r.id] = seen
     members: dict[str, list[str]] = {r.id: [] for r in valid}
+    orphans: list[str] = []
     for nid, n in nodes.items():
         if n.is_summary:
             continue
-        home = next((r.id for r in valid if nid in feeders[r.id]), valid[-1].id)
-        members[home].append(nid)
-    return valid, members, feeders
+        home = next((r.id for r in valid if nid in feeders[r.id]), None)
+        if home is None:
+            orphans.append(nid)
+        else:
+            members[home].append(nid)
+    return valid, members, feeders, orphans
 
 
 def release_chain(
@@ -805,18 +814,23 @@ def compute_releases(
     incoming: dict[str, list[_Edge]],
     valid: list[Release],
     members: dict[str, list[str]],
-    feeders: dict[str, set[str]],
+    orphans: list[str],
     progress_of: Callable[[list[str]], int],
 ) -> list[ReleaseResult]:
     results: list[ReleaseResult] = []
-    for r in valid:
-        ids = members[r.id]
-        ms = nodes[r.milestone_task_id]
+    # (id, name, milestone id, override days, tasks, boundary the buffer starts at)
+    groups: list[tuple[str, str, str, int | None, list[str], int]] = [
+        (r.id, r.name, r.milestone_task_id, r.days, members[r.id], nodes[r.milestone_task_id].ef)
+        for r in valid
+    ]
+    if valid and any(nodes[i].dur > 0 for i in orphans):
+        # work that leads to no delivery point still needs protection: a trailing buffer
+        tail_end = max(nodes[i].ef for i in orphans)
+        groups.append((TAIL_RELEASE_ID, TAIL_RELEASE_NAME, "", None, orphans, tail_end))
+    for rid, name, ms_id, days_override, ids, boundary in groups:
         member_set = set(ids)
         chain, path = release_chain(nodes, order, incoming, member_set)
-        days, percent_used, note = size_buffer(project.buffer, chain, path, nodes, r.days)
-        # the release ends at its milestone, or later if orphan tasks (last release) run past it
-        boundary = max([ms.ef] + [nodes[i].ef for i in ids if i not in feeders[r.id]])
+        days, percent_used, note = size_buffer(project.buffer, chain, path, nodes, days_override)
         planned_end = _milestone_date(cal, boundary) if ids else None
         end = cal.day(boundary + days - 1) if days > 0 else planned_end
         committed_end: date | None = None
@@ -827,7 +841,7 @@ def compute_releases(
         critical_ids = [i for i in ids if out[i].is_critical and nodes[i].dur > 0]
         progress = progress_of(ids)
         chain_progress = progress_of(critical_ids or [i for i in path if nodes[i].dur > 0] or ids)
-        base = project.baseline.releases.get(r.id) if project.baseline else None
+        base = project.baseline.releases.get(rid) if project.baseline else None
         if base is not None and planned_end is not None:
             base_boundary = cal.index_of(base.planned_end) + 1
             committed_end = base.planned_end
@@ -850,9 +864,9 @@ def compute_releases(
                     status = "green"
         results.append(
             ReleaseResult(
-                id=r.id,
-                name=r.name,
-                milestone_task_id=r.milestone_task_id,
+                id=rid,
+                name=name,
+                milestone_task_id=ms_id,
                 task_ids=sorted(ids, key=lambda i: (nodes[i].es, nodes[i].ef, i)),
                 chain_days=chain,
                 days=days,
@@ -935,6 +949,13 @@ def compute_feeding_buffers(
 
 
 # ------------------------------------------------------------------- utilities
+
+
+def default_today() -> date:
+    """Today for health / buffer tracking. `APP_TODAY=YYYY-MM-DD` pins it (screenshot and e2e
+    servers use this so baselines do not drift as real days pass); otherwise the real date."""
+    pinned = os.environ.get("APP_TODAY")
+    return date.fromisoformat(pinned) if pinned else date.today()
 
 
 def dependency_targets(dep: Dependency) -> tuple[str, str]:

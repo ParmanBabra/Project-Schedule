@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url'
 const here = fileURLToPath(new URL('.', import.meta.url))
 const E2E_DATA_DIR = resolve(here, '../.e2e-data')
 const BACKEND_PORT = 8001
+/** Screenshot and e2e servers/browsers run on this day so visual baselines do not drift with the calendar. */
+export const FIXED_TODAY = '2026-09-16'
 const FRONTEND_PORT = 5174
 
 /** The e2e backend runs with the login gate ON using these credentials. */
@@ -46,6 +48,7 @@ export default defineConfig({
         AUTH_USERNAME: E2E_CREDENTIALS.username,
         AUTH_PASSWORD: E2E_CREDENTIALS.password,
         SESSION_SECRET: 'e2e-secret',
+        APP_TODAY: FIXED_TODAY, // the sample plan is dated Sep 2026; keep "today" there so late/buffer states are stable
         AUTH_MAX_FAILURES: '100000', // the login screens fail on purpose many times per run
         CONFIG_FILE: resolve(here, '.auth/no-config.json'), // never read the developer's real config.json
       },

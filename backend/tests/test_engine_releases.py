@@ -57,12 +57,25 @@ def test_no_releases_means_empty_list_and_project_buffer_unchanged():
     assert s.buffer.days == 2  # 50% of 3, unchanged behaviour
 
 
-def test_tasks_belong_to_the_earliest_release_they_feed_and_orphans_to_the_last():
+def test_tasks_belong_to_the_earliest_release_they_feed_and_orphans_get_a_tail_buffer():
     s = compute_schedule(two_releases())
-    assert [r.id for r in s.releases] == ["rel_01", "rel_02"]  # ordered by milestone date
+    # ordered by milestone date, the trailing "outside any delivery point" group last
+    assert [r.id for r in s.releases] == ["rel_01", "rel_02", "tail"]
     r = by_id(s)
     assert r["rel_01"].task_ids == ["a", "b", "m1"]
-    assert r["rel_02"].task_ids == ["e", "c", "d", "m2"]  # e never reaches a milestone
+    assert r["rel_02"].task_ids == ["c", "d", "m2"]
+    tail = r["tail"]  # e never reaches a milestone
+    assert tail.task_ids == ["e"] and tail.milestone_task_id == ""
+    assert tail.name == "งานนอกจุดส่งมอบ"
+    assert tail.chain_days == 2 and tail.days == 1
+    assert tail.planned_end == D(2026, 9, 15) and tail.end == D(2026, 9, 16)
+
+
+def test_no_tail_when_the_orphans_are_only_milestones():
+    p = two_releases()
+    p.tasks = [t for t in p.tasks if t.id != "e"]
+    p.tasks.append(task("handover", 0, order=9, milestone=True))
+    assert [r.id for r in compute_schedule(p).releases] == ["rel_01", "rel_02"]
 
 
 def test_release_pointing_at_a_missing_or_group_task_is_skipped():
@@ -71,7 +84,7 @@ def test_release_pointing_at_a_missing_or_group_task_is_skipped():
     p.tasks.append(task("g", 1, order=8))
     p.tasks.append(task("g1", 2, order=1, parent="g"))
     p.releases.append(Release(id="rel_10", name="กลุ่ม", milestone_task_id="g"))
-    assert [r.id for r in compute_schedule(p).releases] == ["rel_01", "rel_02"]
+    assert [r.id for r in compute_schedule(p).releases] == ["rel_01", "rel_02", "tail"]
 
 
 # ------------------------------------------------- critical chain per release
@@ -142,12 +155,16 @@ def test_waiting_gaps_do_not_inflate_the_chain():
     assert r["rel_02"].chain_days == 6 and r["rel_02"].days == 3
 
 
-def test_orphans_that_run_past_the_last_milestone_extend_that_release():
+def test_a_release_buffer_stays_at_its_milestone_even_when_orphans_run_past_it():
     p = two_releases()
     p.tasks[6].duration = 20  # e: 0..20, past m2 at 14
     r = by_id(compute_schedule(p))
-    assert r["rel_02"].planned_end == D(2026, 10, 9)  # boundary 20
-    assert r["rel_02"].chain_days == 20 and r["rel_02"].chain_task_ids == ["e"]
+    # the delivery point is untouched: still 1 Oct, chain c+d, buffer right after the milestone
+    assert r["rel_02"].planned_end == D(2026, 10, 1) and r["rel_02"].end == D(2026, 10, 6)
+    assert r["rel_02"].chain_days == 6 and r["rel_02"].chain_task_ids == ["c", "d"]
+    # the long orphan is protected by the trailing buffer instead
+    assert r["tail"].planned_end == D(2026, 10, 9)
+    assert r["tail"].chain_days == 20 and r["tail"].days == 10
 
 
 def test_days_override_per_release_and_project_wide_override():

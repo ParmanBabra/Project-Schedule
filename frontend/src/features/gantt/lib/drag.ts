@@ -41,6 +41,16 @@ export function moveTarget(s: TaskSchedule, days: number, cal: WorkCal): string 
   return nextWorkingDay(addDays(s.start, days), cal)
 }
 
+/**
+ * A milestone is drawn at the END of the day it shows. Moving it by `days` must make it show on
+ * that day (snapped back to a working day), so the "start no earlier than" we send is the next
+ * working day after it: the engine puts the milestone on the boundary where that day begins.
+ */
+export function milestoneTarget(s: TaskSchedule, days: number, cal: WorkCal): { start: string; shown: string } {
+  const shown = prevWorkingDay(addDays(s.end, days), cal)
+  return { start: nextWorkingDay(addDays(shown, 1), cal), shown }
+}
+
 /** New working-day duration when the right edge is dragged by `days` calendar days (min 1). */
 export function resizeTarget(s: TaskSchedule, days: number, cal: WorkCal): number {
   const end = prevWorkingDay(addDays(s.end, days), cal)

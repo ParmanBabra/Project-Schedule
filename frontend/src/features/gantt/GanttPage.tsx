@@ -140,7 +140,7 @@ export function GanttPage() {
       onSuccess: (next) => {
         const s = next.schedule.tasks[patch.taskId]
         const name = next.tasks.find((t) => t.id === patch.taskId)?.name ?? ''
-        toast.show(patch.start ? `ย้าย "${name}" ไปเริ่ม ${formatThai(s.start)}` : `"${name}" เป็น ${patch.duration} วัน`, {
+        toast.show(patch.start ? `ย้าย "${name}" ${s.isMilestone ? 'ไปวันที่' : 'ไปเริ่ม'} ${formatThai(s.start)}` : `"${name}" เป็น ${patch.duration} วัน`, {
           action: { label: 'เลิกทำ', onClick: () => undo() },
         })
       },
